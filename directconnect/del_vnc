@@ -1,0 +1,57 @@
+#!/bin/bash
+
+if [ -n $DEBUG ]; then
+    set -vx
+    VNCDIR=${HOME}/.vnc
+else
+    VNCDIR=/dev/null
+fi
+
+if [ -f ./site_config ]; then
+    . ./site_config
+fi
+
+# TODO : Change LOGNAME definition if needed
+LOGNAME=${USER}
+# TODO : Change PORTID definition with LDAP DB !
+i=$(id -u)
+# PORTID gives the last three numbers of the PORT (and SOCKETdomain the thousands for each tiledsets).
+PORTID=$( printf "%03d"  $((10#$i % 1000)) )
+
+
+DATE=$(date +%F_%H-%M)
+LOGFILE=${VNCDIR}/out_del_$(hostname)_${DATE}_$$
+
+pgrep -fa x11vnc  |tee -a $LOGFILE
+
+pgrep -f x11vnc |grep $LOGNAME
+RET=$?
+
+if [ ${RET} -eq 0 ]; then
+    pgrep -fa x11vnc |grep $LOGNAME |sed -e 's/\([0-9]*\) .*/\1/' |xargs kill -9  |tee -a $LOGFILE
+
+    pgrep -fa x11vnc |tee -a $LOGFILE
+    pgrep -fa ssh |grep $LOGNAME |sed -e 's/\([0-9]*\) .*/\1/' |tee -a $LOGFILE
+    
+    export PIDssh=$( pgrep -fa ssh |grep $LOGNAME | sed -e 's@.*'${HTTP_FRONTEND}'.*@OK@' |sed -e 's/\([0-9]*\) .*/\1/' )
+    echo "All PID ssh to be killed : ${PIDssh[@]}"  |tee -a $LOGFILE
+    kill ${PIDssh[@]}
+    
+    # issh=0
+    # while [ true ]; do
+    # 	ssh -i ${HOME}/.ssh/id-rsa-poincare ${LOGNAME}@${HTTP_FRONTEND} rm /home/tutorials/${LOGNAME}/TRAINING/out_node_${PORTID} 
+    # 	RET=$?
+    # 	issh=$(( issh + 1 ))
+    # 	if [ $RET -eq 0 ]; then
+    # 	    break;
+    # 	else
+    # 	    sleep 1	
+    # 	fi
+    # 	if [ $issh -gt 3 ]; then
+    # 	    echo "Timeout for ssh rm out_node file. Something wrong append."
+    # 	    exit -1
+    # 	fi
+    # done
+fi
+
+zenity --info --text "VNC closed." &

@@ -1,0 +1,10 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Icon[fr_FR]=/opt/nfs/mdls/TiledViz/TiledViz.png
+Name[fr_FR]=TiledViz
+Exec=/opt/nfs/mdls/TiledViz/launch_vnc
+Name=TiledViz
+Icon=/opt/nfs/mdls/TiledViz/TiledViz.png

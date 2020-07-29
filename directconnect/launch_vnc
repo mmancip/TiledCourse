@@ -1,0 +1,123 @@
+#!/bin/bash
+
+# Use with DEBUG=true if you need a log in $HOME/.vnc dir
+# You must execute this script in a DIR with site_config file for TiledViz tileset definition.
+
+# See TODO lines for your local installation (LDAP...)
+
+
+if [ -n $DEBUG ]; then
+    set -vx
+    VNCDIR=${HOME}/.vnc
+else
+    VNCDIR=/dev/null
+fi
+
+if [ -f ./site_config ]; then
+    . ./site_config
+fi
+
+# TODO : Change LOGNAME definition if needed
+LOGNAME=${USER}
+# TODO : Change PORTID definition with LDAP DB !
+i=$(id -u)
+# PORTID gives the last three numbers of the PORT (and SOCKETdomain the thousands for each tiledsets).
+PORTID=$( printf "%03d"  $((10#$i % 1000)) )
+
+if [ ! -d ${VNCDIR} ]; then
+    mkdir ${VNCDIR}
+    chmod 700 ${VNCDIR}
+fi
+
+DATE=$(date +%F_%H-%M)
+LOGFILE=${VNCDIR}/out_$(hostname)_${DATE}_$$
+
+echo $(hostname) " ID : " ${PORTID} " VNC : " $(pgrep -f x11vnc |grep $LOGNAME) |tee -a $LOGFILE 
+
+
+$(dirname ${BASH_SOURCE[0]})/del_vnc
+
+newpass=true
+if [ -e ${VNCDIR}/passvnc_* ]; then
+    OLDdate=( $( ls ${VNCDIR}/passvnc_* | tr "_" " " ) )
+    # same day = conserve password !
+    if [ ${OLDdate[1]} != $(date +%F) ] ; then
+	rm ${VNCDIR}/passvnc_* |tee -a $LOGFILE
+    else
+	newpass=false
+	DATE=${OLDdate[1]}_${OLDdate[2]}
+    fi
+fi
+if ( $newpass ); then
+    choose() { echo -n ${1:$((RANDOM%${#1})):1}; }
+    password=$({
+	      for i in $(seq 1 8); do
+		  choose "-._+0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	      done
+	  })
+    echo Random Password Generated: $password |tee -a $LOGFILE
+    echo "$password" | xargs -I @ x11vnc -storepasswd @ ${VNCDIR}/passvnc_${DATE}
+else
+    password=$( x11vnc --showrfbauth ${VNCDIR}/passvnc_${DATE} | tail -1 |sed -e 's/.*pass: //' )
+fi
+
+if [ ! -n $DISPLAY ]; then
+    export DISPLAY=:0.0
+fi
+export LOGvnc=${VNCDIR}/vnc-server_${DATE}_$$
+x11vnc -display $DISPLAY -forever -noncache -noxdamage  -tightfilexfer -rfbauth ${VNCDIR}/passvnc_${DATE} -cursor -arrow -listen=localhost -shared >> ${LOGvnc} 2>&1 &
+export RFBPORT=$(grep "PORT=" ${LOGvnc} |sed -e 's/PORT=//' )
+
+echo "detect x11vnc :" >>  $LOGFILE
+ivnc=0
+while [ true ]; do
+    pgrep -f x11vnc |grep $LOGNAME
+    RET=$?
+    echo $RET >>  $LOGFILE
+    ivnc=$(( ivnc + 1 ))
+    if [ ${RET} -eq 0 ]; then
+	break;
+    else
+	sleep 1
+    fi
+    if [ $ivnc -gt 20 ]; then
+	echo "Timeout for x11vnc launch. Something wrong append."
+	exit -2
+    fi
+done
+
+#su - myuser -c "ssh-keygen -b 1024 -t rsa -N '' -f ~myuser/.ssh/id_rsa"
+echo "detect tunnel :"
+issh=0
+while [ true ]; do
+    ssh -k -oStrictHostKeyChecking=no -T -N -nf -R ${SOCKETdomain}${PORTID}:localhost:${RFBPORT} ${LOGNAME}@${HTTP_FRONTEND}
+    RET=$?
+    pgrep -fa ssh
+    DETECT=$( pgrep -fa ssh | sed -e 's@.*'${HTTP_FRONTEND}'.*@OK@' | grep OK )
+    echo $DETECT >>  $LOGFILE
+    issh=$(( issh + 1 ))
+    #X${DETECT} == "XOK"
+    if [ $RET -eq 0 ]; then
+	break;
+    else
+	export PIDssh=$( pgrep -fa ssh |grep $LOGNAME |sed -e 's/\([0-9]*\) .*/\1/' )
+	kill ${PIDssh[@]}
+	sleep 1	
+    fi
+    if [ $issh -gt 20 ]; then
+	echo "Timeout for ssh tunneling. Something wrong append."
+	exit -1
+    fi
+done
+pgrep -fa ssh  |tee -a $LOGFILE
+
+rm -f ~/.vnc/out_node_*
+OUT_Node=~/.vnc/out_node_${PORTID}
+echo '{"title": "'$(id -u)'",' > ${OUT_Node}
+echo ' "url" : "&port='${SOCKETdomain}${PORTID}'&password='${password}'",' >> ${OUT_Node}
+echo '"comment": "'$(hostname)' '${PORTID}'",' >> ${OUT_Node}
+echo '"connection": 1},' >> ${OUT_Node}
+cat ${OUT_Node} >> $LOGFILE
+cat ${OUT_Node}
+
+zenity --info --text "VNC launched." &
