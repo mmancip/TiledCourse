@@ -5,16 +5,15 @@
 
 # See TODO lines for your local installation (LDAP...)
 
-
-if [ -n $DEBUG ]; then
+DEBUG=$1
+if [ X"$DEBUG" != X ]; then
     set -vx
-    VNCDIR=${HOME}/.vnc
-else
-    VNCDIR=/dev/null
 fi
 
-if [ -f ./site_config ]; then
-    . ./site_config
+VNCDIR=${HOME}/.vnc
+
+if [ -f $VNCDIR/site_config ]; then
+    . $VNCDIR/site_config
 fi
 
 # TODO : Change LOGNAME definition if needed
@@ -30,9 +29,12 @@ if [ ! -d ${VNCDIR} ]; then
 fi
 
 DATE=$(date +%F_%H-%M)
-LOGFILE=${VNCDIR}/out_$(hostname)_${DATE}_$$
-
-echo $(hostname) " ID : " ${PORTID} " VNC : " $(pgrep -f x11vnc |grep $LOGNAME) |tee -a $LOGFILE 
+if [ -n $DEBUG ]; then
+    LOGFILE=${VNCDIR}/out_$(hostname)_${DATE}_$$
+else
+    LOGFILE=/dev/null
+fi
+echo $(hostname) " ID : " ${PORTID} " VNC : " $(pgrep -fa x11vnc |grep $LOGNAME) |tee -a $LOGFILE 
 
 
 $(dirname ${BASH_SOURCE[0]})/del_vnc
@@ -65,47 +67,56 @@ if [ ! -n $DISPLAY ]; then
     export DISPLAY=:0.0
 fi
 export LOGvnc=${VNCDIR}/vnc-server_${DATE}_$$
-x11vnc -display $DISPLAY -forever -noncache -noxdamage  -tightfilexfer -rfbauth ${VNCDIR}/passvnc_${DATE} -cursor -arrow -listen=localhost -shared >> ${LOGvnc} 2>&1 &
-export RFBPORT=$(grep "PORT=" ${LOGvnc} |sed -e 's/PORT=//' )
+x11vnc -display $DISPLAY -forever -noncache -noxdamage  -tightfilexfer -rfbauth ${VNCDIR}/passvnc_${DATE} -cursor -arrow -listen=localhost -shared > ${LOGvnc} 2>&1 &
 
-echo "detect x11vnc :" >>  $LOGFILE
+echo "detect x11vnc :" |tee -a $LOGFILE
 ivnc=0
 while [ true ]; do
-    pgrep -f x11vnc |grep $LOGNAME
-    RET=$?
-    echo $RET >>  $LOGFILE
+    export PIDvnc=$( pgrep -fa x11vnc |grep $LOGNAME |grep ${VNCDIR}/passvnc_ |sed -e 's/\([0-9]*\) .*/\1/' )
+    echo ${PIDvnc[@]} >>  $LOGFILE
     ivnc=$(( ivnc + 1 ))
-    if [ ${RET} -eq 0 ]; then
+    if [ X"${PIDvnc[@]}" != X ]; then
 	break;
     else
 	sleep 1
     fi
     if [ $ivnc -gt 20 ]; then
-	echo "Timeout for x11vnc launch. Something wrong append."
+	echo "Timeout for x11vnc launch. Something wrong append." |tee -a $LOGFILE
+	sleep 1
 	exit -2
     fi
 done
+sleep 2
+export RFBPORT=$(grep "PORT=" ${LOGvnc} |sed -e 's/PORT=//' )
+echo "PORT = $RFBPORT" |tee -a $LOGFILE
 
 #su - myuser -c "ssh-keygen -b 1024 -t rsa -N '' -f ~myuser/.ssh/id_rsa"
-echo "detect tunnel :"
+echo "launch tunnel :" |tee -a $LOGFILE
 issh=0
 while [ true ]; do
+    echo "ssh -k -oStrictHostKeyChecking=no -T -N -nf -R ${SOCKETdomain}${PORTID}:localhost:${RFBPORT} ${LOGNAME}@${HTTP_FRONTEND}" |tee -a $LOGFILE
     ssh -k -oStrictHostKeyChecking=no -T -N -nf -R ${SOCKETdomain}${PORTID}:localhost:${RFBPORT} ${LOGNAME}@${HTTP_FRONTEND}
     RET=$?
-    pgrep -fa ssh
-    DETECT=$( pgrep -fa ssh | sed -e 's@.*'${HTTP_FRONTEND}'.*@OK@' | grep OK )
-    echo $DETECT >>  $LOGFILE
+    echo $RET >> $LOGFILE
+    #pgrep -fa ssh |tee -a $LOGFILE
+    #DETECT=$( pgrep -fa ssh | sed -e 's@.*'${HTTP_FRONTEND}'.*@OK@' | grep OK )
+    DETECT=$( pgrep -fa ssh | grep ${LOGNAME} |grep ${HTTP_FRONTEND} )
+    echo $DETECT  |tee -a $LOGFILE
     issh=$(( issh + 1 ))
     #X${DETECT} == "XOK"
     if [ $RET -eq 0 ]; then
 	break;
     else
-	export PIDssh=$( pgrep -fa ssh |grep $LOGNAME |sed -e 's/\([0-9]*\) .*/\1/' )
-	kill ${PIDssh[@]}
-	sleep 1	
+	export PIDssh=$( pgrep -fa ssh |grep $LOGNAME |grep ${HTTP_FRONTEND} |sed -e 's/\([0-9]*\) .*/\1/' )
+	if [ X"${PIDssh[@]}" == X"" ]; then
+	    echo "No ssh tunnel avaible." |tee -a $LOGFILE
+	    sleep 1
+	else 
+	    break
+	fi
     fi
     if [ $issh -gt 20 ]; then
-	echo "Timeout for ssh tunneling. Something wrong append."
+	echo "Timeout for ssh tunneling. Something wrong append." |tee -a $LOGFILE
 	exit -1
     fi
 done
@@ -114,7 +125,7 @@ pgrep -fa ssh  |tee -a $LOGFILE
 rm -f ~/.vnc/out_node_*
 OUT_Node=~/.vnc/out_node_${PORTID}
 echo '{"title": "'$(id -u)'",' > ${OUT_Node}
-echo ' "url" : "&port='${SOCKETdomain}${PORTID}'&password='${password}'",' >> ${OUT_Node}
+echo ' "url" : "'${NOVNC_URL}'?host='${HTTP_FRONTEND}'&port='${SOCKETdomain}${PORTID}'&password='${password}'",' >> ${OUT_Node}
 echo '"comment": "'$(hostname)' '${PORTID}'",' >> ${OUT_Node}
 echo '"connection": 1},' >> ${OUT_Node}
 cat ${OUT_Node} >> $LOGFILE

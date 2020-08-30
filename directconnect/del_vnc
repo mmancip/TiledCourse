@@ -1,14 +1,14 @@
 #!/bin/bash
 
-if [ -n $DEBUG ]; then
+DEBUG=$1
+if [ X"$DEBUG" != X ]; then
     set -vx
-    VNCDIR=${HOME}/.vnc
-else
-    VNCDIR=/dev/null
 fi
 
-if [ -f ./site_config ]; then
-    . ./site_config
+VNCDIR=${HOME}/.vnc
+
+if [ -f $VNCDIR/site_config ]; then
+    . $VNCDIR/site_config
 fi
 
 # TODO : Change LOGNAME definition if needed
@@ -22,36 +22,25 @@ PORTID=$( printf "%03d"  $((10#$i % 1000)) )
 DATE=$(date +%F_%H-%M)
 LOGFILE=${VNCDIR}/out_del_$(hostname)_${DATE}_$$
 
-pgrep -fa x11vnc  |tee -a $LOGFILE
+pgrep -fa x11vnc  |grep -v tee |tee -a $LOGFILE
 
-pgrep -f x11vnc |grep $LOGNAME
+pgrep -fa x11vnc |grep $LOGNAME |grep ${VNCDIR}/passvnc_
 RET=$?
 
 if [ ${RET} -eq 0 ]; then
-    pgrep -fa x11vnc |grep $LOGNAME |sed -e 's/\([0-9]*\) .*/\1/' |xargs kill -9  |tee -a $LOGFILE
+    export PIDvnc=$( pgrep -fa x11vnc |grep $LOGNAME |grep ${VNCDIR}/passvnc_ |sed -e 's/\([0-9]*\) .*/\1/' )
+    echo "VNC processes : " ${PIDvnc[@]} ". Number " ${#PIDvnc[@]} >> $LOGFILE
+    if [ X"${PIDvnc[@]}" != X ]; then
+	kill -9 ${PIDvnc[@]} |tee -a $LOGFILE
+	zenity --info --text "VNC closed." &
+    fi
 
-    pgrep -fa x11vnc |tee -a $LOGFILE
-    pgrep -fa ssh |grep $LOGNAME |sed -e 's/\([0-9]*\) .*/\1/' |tee -a $LOGFILE
+    pgrep -fa x11vnc |grep -v tee |tee -a $LOGFILE
+    pgrep -fa ssh |grep $LOGNAME | grep ${HTTP_FRONTEND} |sed -e 's/\([0-9]*\) .*/\1/' |tee -a $LOGFILE
     
-    export PIDssh=$( pgrep -fa ssh |grep $LOGNAME | sed -e 's@.*'${HTTP_FRONTEND}'.*@OK@' |sed -e 's/\([0-9]*\) .*/\1/' )
-    echo "All PID ssh to be killed : ${PIDssh[@]}"  |tee -a $LOGFILE
-    kill ${PIDssh[@]}
-    
-    # issh=0
-    # while [ true ]; do
-    # 	ssh -i ${HOME}/.ssh/id-rsa-poincare ${LOGNAME}@${HTTP_FRONTEND} rm /home/tutorials/${LOGNAME}/TRAINING/out_node_${PORTID} 
-    # 	RET=$?
-    # 	issh=$(( issh + 1 ))
-    # 	if [ $RET -eq 0 ]; then
-    # 	    break;
-    # 	else
-    # 	    sleep 1	
-    # 	fi
-    # 	if [ $issh -gt 3 ]; then
-    # 	    echo "Timeout for ssh rm out_node file. Something wrong append."
-    # 	    exit -1
-    # 	fi
-    # done
+    export PIDssh=$( pgrep -fa ssh |grep $LOGNAME | grep ${HTTP_FRONTEND} |sed -e 's/\([0-9]*\) .*/\1/' )
+    echo "All PID ssh to be killed : |${PIDssh[@]}|"  |tee -a $LOGFILE
+    if [ X"${PIDssh[@]}" != X ]; then
+	kill ${PIDssh[@]} |tee -a $LOGFILE
+    fi
 fi
-
-zenity --info --text "VNC closed." &
