@@ -35,13 +35,10 @@ if __name__ == '__main__':
 
     config.read(SITE_config)
 
-    TILEDOCKERS_path=config['SITE']['TILEDOCKER_DIR']
     NOVNC_URL=config['SITE']['NOVNC_URL']
 
     HTTP_FRONTEND=config['SITE']['HTTP_FRONTEND']
-    HTTP_LOGIN=config['SITE']['HTTP_LOGIN']
-    HTTP_IP=config['SITE']['HTTP_IP']
-    init_IP=config['SITE']['init_IP']
+    HOMEstudents=config['SITE']['HOMEstudents']
 
     SOCKETdomain=config['SITE']['SOCKETdomain']
 
@@ -63,7 +60,8 @@ if __name__ == '__main__':
         return lines
 
     NUM_STUDENTS=countlines(FILEPATH)
-
+    print("Number of students :")
+    
     CreateTS='create TS='+TileSet+' Nb='+str(NUM_STUDENTS)
 
     client.send_server(CreateTS)
@@ -93,6 +91,12 @@ if __name__ == '__main__':
             pass
 
     # Build nodes.json file from new dockers list
+    print("Build nodes.json file from new dockers list.")
+    sys.stdout.flush()
+    try:
+        code.interact(banner="Interactive console to use actions directly :",local=dict(globals(), **locals()))
+    except SystemExit:
+        pass
     COMMAND='launch TS='+TileSet+" "+JOBPath+' ./build_nodes_file '+CASE_config+' '+SITE_config+' '+TileSet
     print("\nCommand dockers : "+COMMAND)
 
@@ -118,8 +122,6 @@ if __name__ == '__main__':
         code.interact(banner="Interactive console to use actions directly :",local=dict(globals(), **locals()))
     except SystemExit:
         pass
-
-    kill_all_containers()
 
     sys.exit(0)
 

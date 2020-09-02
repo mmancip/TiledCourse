@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -vx
 
 CASE_NAME=UNKNOWN
 NOVNC_URL='http://mycuster/kanaka-noVNC-33e1462/vnc_auto.html'
