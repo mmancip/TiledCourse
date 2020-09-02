@@ -37,7 +37,7 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
   i0=$(printf "%03d" $((i+1)))
 
   # Student values
-  IFS=';' read -r -a aline <<<$line
+  IFS='; ' read -r -a aline <<<$line
 
   STUDENT=${aline[0]}
   echo "Student : " ${STUDENT} 
@@ -45,9 +45,10 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
   MAILstudent=${aline[1]}
   echo "Student mail : " ${MAILstudent} 
 
-  USERstudent=${aline[2]}
-  HOMEstudent=$HOMEstudents/$USERstudent #TODO : change if home is in another place???
-
+  USERstudent=${aline[2]//[[:blank:]]/}
+  HOMEstudent=$HOMEstudents$USERstudent #TODO : change if home is in another place???
+  echo "Student home dir : $HOMEstudent"
+  
   #IFS=' ' read -r -a aline <<<${line2}
   # line=$(echo ${line2} |sed -e 's/"/$/g')
   # IFS='$' read -r -a aline <<<$line
@@ -58,9 +59,9 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
       echo '},' >> nodes.json
   fi
 
-  if [ -e $HOMEstudent/.vnc/out_nodes_* ]; then
-      PORTID=$(basename $HOMEstudent/.vnc/out_nodes_* | sed -e 's&out_nodes_&&')
-      NODEFile=$HOMEstudent/.vnc/out_nodes_${PORTID}
+  if [ -e $HOMEstudent/.vnc/out_node_* ]; then
+      PORTID=$(basename $HOMEstudent/.vnc/out_node_* | sed -e 's&out_node_&&')
+      NODEFile=$HOMEstudent/.vnc/out_node_${PORTID}
   else
       echo "Student "${STUDENT} " has not already connect his vnc."
       #sleep 10
@@ -73,7 +74,7 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
   URL=$(echo $NOVNC_URL | envsubst) # expand envars in $NOVNC_URL
   grep url ${NODEFile} |sed -e 's{"url" : "&port={"url" : "'${URL}'?host='${HTTP_FRONTEND}'&true_color=1&encrypt=0&port={' >> nodes.json
 
-  grep comment ${NODEFile} >> nodes.json
+  grep comment ${NODEFile} | sed -e "s&\": \"&\": \"${MAILstudent} &" >> nodes.json
 
   echo ' "tags"  : ["'$TileSet'"]' >> nodes.json
   echo '  "variable" : "ID-'$i0'",' >> nodes.json
