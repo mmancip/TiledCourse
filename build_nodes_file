@@ -37,7 +37,7 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
   i0=$(printf "%03d" $((i+1)))
 
   # Student values
-  IFS='; ' read -r -a aline <<<$line
+  IFS=';' read -r -a aline <<<$line
 
   STUDENT=${aline[0]}
   echo "Student : " ${STUDENT} 
@@ -49,12 +49,6 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
   HOMEstudent=$HOMEstudents$USERstudent #TODO : change if home is in another place???
   echo "Student home dir : $HOMEstudent"
   
-  #IFS=' ' read -r -a aline <<<${line2}
-  # line=$(echo ${line2} |sed -e 's/"/$/g')
-  # IFS='$' read -r -a aline <<<$line
-  # echo ${aline[0]}
-  # echo ${aline[1]}
-
   if [ $i -gt 0 ]; then
       echo '},' >> nodes.json
   fi
@@ -72,15 +66,15 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
   echo '{"title": "'${STUDENT}'",' >> nodes.json
 
   URL=$(echo $NOVNC_URL | envsubst) # expand envars in $NOVNC_URL
-  grep url ${NODEFile} |sed -e 's{"url" : "&port={"url" : "'${URL}'?host='${HTTP_FRONTEND}'&true_color=1&encrypt=0&port={' >> nodes.json
+  grep url ${NODEFile} |sed -e 's@"url" : "&port=@"url" : "'${URL}'?host='${HTTP_FRONTEND}'&true_color=1&encrypt=0&port=@' >> nodes.json
 
   grep comment ${NODEFile} | sed -e "s&\": \"&\": \"${MAILstudent} &" >> nodes.json
 
-  echo ' "tags"  : ["'$TileSet'"]' >> nodes.json
+  echo ' "tags"  : ["'$TileSet'"],' >> nodes.json
   echo '  "variable" : "ID-'$i0'",' >> nodes.json
 
-  grep connection ${NODEFile} >> nodes.json
-
+  echo '"connection" : 1' >> nodes.json
+  
   i=$(( i + 1 ))
 done 3< ${FILEPATH}
 
