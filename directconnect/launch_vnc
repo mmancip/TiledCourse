@@ -11,6 +11,7 @@ if [ X"$DEBUG" != X ]; then
 fi
 
 VNCDIR=${HOME}/.vnc
+chmod 750 $VNCDIR
 
 if [ -f $VNCDIR/site_config ]; then
     . $VNCDIR/site_config
@@ -25,7 +26,7 @@ PORTID=$( printf "%03d"  $((10#$i % 1000)) )
 
 if [ ! -d ${VNCDIR} ]; then
     mkdir ${VNCDIR}
-    chmod 700 ${VNCDIR}
+    chmod 750 $VNCDIR
 fi
 
 DATE=$(date +%F_%H-%M)
@@ -130,5 +131,6 @@ echo '"comment": "'$(hostname)' '${PORTID}'",' >> ${OUT_Node}
 echo '"connection": 1},' >> ${OUT_Node}
 cat ${OUT_Node} >> $LOGFILE
 cat ${OUT_Node}
+chmod 640 ${OUT_Node}
 
 zenity --info --text "VNC launched." &
