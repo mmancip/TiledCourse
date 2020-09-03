@@ -66,14 +66,12 @@ if __name__ == '__main__':
 
     client.send_server(CreateTS)
 
-    # get TiledTest package from Github
-    os.system("git clone https://github.com/mmancip/TiledTest.git")
-    # Untar Test package
-    # os.system("tar xfz TiledTest.tgz")
+    # get TiledCourse package from Github
+    os.system("git clone https://github.com/mmancip/TiledCourse.git")
 
     # Send CASE and SITE files
     try:
-        send_file_server(client,TileSet,"TiledTest", "build_nodes_file", JOBPath)
+        send_file_server(client,TileSet,"TiledCourse", "build_nodes_file", JOBPath)
 
         send_file_server(client,TileSet,".", CASE_config, JOBPath)
         CASE_config=os.path.join(JOBPath,os.path.basename(CASE_config))
@@ -91,19 +89,17 @@ if __name__ == '__main__':
             pass
 
     # Build nodes.json file from new dockers list
-    print("Build nodes.json file from new dockers list.")
-    sys.stdout.flush()
-    try:
-        code.interact(banner="Interactive console to use actions directly :",local=dict(globals(), **locals()))
-    except SystemExit:
-        pass
-    COMMAND='launch TS='+TileSet+" "+JOBPath+' ./build_nodes_file '+CASE_config+' '+SITE_config+' '+TileSet
-    print("\nCommand dockers : "+COMMAND)
+    def build_nodes_file():
+        print("Build nodes.json file from new dockers list.")
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' ./build_nodes_file '+CASE_config+' '+SITE_config+' '+TileSet
+        print("\nCommand dockers : "+COMMAND)
 
-    client.send_server(COMMAND)
-    print("Out of build_nodes_file : "+ str(client.get_OK()))
-    
-    get_file_client(client,TileSet,JOBPath,"nodes.json",".")
+        client.send_server(COMMAND)
+        print("Out of build_nodes_file : "+ str(client.get_OK()))
+        os.system('rm -f ./nodes.json')
+        get_file_client(client,TileSet,JOBPath,"nodes.json",".")
+
+    build_nodes_file()
 
     # # Launch Server for commands from FlaskDock
     # print("GetActions=ClientAction("+str(connectionId)+",globals=dict(globals()),locals=dict(**locals()))")
