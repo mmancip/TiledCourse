@@ -20,3 +20,7 @@ cp ./unTiledViz.png ./TiledViz.png ./del_vnc ./launch_vnc $INSTALLPATH
 # test xdg-open (linux MIME application)
 #which xdg-open
 
+# TODO : INSTALLPATH on HTTP_FRONTEND server
+cd ${INSTALLPATH}
+git clone https://github.com/novnc/websockify.git websockify
+
