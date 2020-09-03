@@ -37,8 +37,8 @@ else
 fi
 echo $(hostname) " ID : " ${PORTID} " VNC : " $(pgrep -fa x11vnc |grep $LOGNAME) |tee -a $LOGFILE 
 
-
-$(dirname ${BASH_SOURCE[0]})/del_vnc
+INSTALLPATH=$(dirname ${BASH_SOURCE[0]})
+${INSTALLPATH}/del_vnc
 
 newpass=true
 if [ -e ${VNCDIR}/passvnc_* ]; then
@@ -121,12 +121,17 @@ while [ true ]; do
 	exit -1
     fi
 done
+# Websocket (less than 65535 = 2^16)
+SOCKETVNC=$(( ${SOCKETdomain}${PORTID} + 500 > 65525 ? ${SOCKETdomain}${PORTID} + 100 : ${SOCKETdomain}${PORTID} + 500 ))
+echo "socket for http connection : " ${SOCKETVNC}
+# Installation of websockify on HTTP_FRONTEND
+ssh ${LOGNAME}@${HTTP_FRONTEND} bash -c "'cd ${INSTALLPATH}/websockify ; ./run ${SOCKETVNC} localhost:${SOCKETdomain}${PORTID} &'" &
 pgrep -fa ssh  |tee -a $LOGFILE
 
 rm -f ~/.vnc/out_node_*
 OUT_Node=~/.vnc/out_node_${PORTID}
 echo '{"title": "'$(id -u)'",' > ${OUT_Node}
-echo ' "url" : "'${NOVNC_URL}'?host='${HTTP_FRONTEND}'&port='${SOCKETdomain}${PORTID}'&password='${password}'",' >> ${OUT_Node}
+echo ' "url" : "'${NOVNC_URL}'?host='${HTTP_FRONTEND}'&port='${SOCKETVNC}'&password='${password}'",' >> ${OUT_Node}
 echo '"comment": "'$(hostname)' '${PORTID}'",' >> ${OUT_Node}
 echo '"connection": 1},' >> ${OUT_Node}
 cat ${OUT_Node} >> $LOGFILE
