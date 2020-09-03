@@ -1,4 +1,4 @@
-#!/bin/bash -vx
+#!/bin/bash 
 
 CASE_NAME=UNKNOWN
 NOVNC_URL='http://mycuster/kanaka-noVNC-33e1462/vnc_auto.html'
@@ -53,6 +53,9 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
       echo '},' >> nodes.json
   fi
 
+  id
+  ls -la $HOMEstudent/.vnc/out_node_*
+  
   if [ -e $HOMEstudent/.vnc/out_node_* ]; then
       PORTID=$(basename $HOMEstudent/.vnc/out_node_* | sed -e 's&out_node_&&')
       NODEFile=$HOMEstudent/.vnc/out_node_${PORTID}
