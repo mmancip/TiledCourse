@@ -87,7 +87,7 @@ if __name__ == '__main__':
     CreateTS='create TS='+TileSet+' Nb='+str(NUM_STUDENTS)
     client.send_server(CreateTS)
     
-    FILECLASS=IdClassroom+"$(basename "+FILEPATH+" ).list"
+    FILECLASS=IdClassroom+os.path.basename(FILEPATH)+".list"
     os.system("cp "+FILEPATH+" "+FILECLASS)
 
     NOM_FICHIER_ETUDIANT_GENERE="generated_list/"+IdClassroom+"_classroom.list"
@@ -101,8 +101,10 @@ if __name__ == '__main__':
     
     #os.system("cp "+FILECLASS+" "+DockerWebRTC+"/original_list") => cf remarque README.md
     
-    os.system("cd DockerWebRTC; ./fastGenerate.sh "+CONFIGPATH)
+    os.system("cd DockerWebRTC; ./fastGenerateMail.sh "+CONFIGPATH)
 
+    # get TiledCourse package from Github
+    os.system("git clone https://github.com/mmancip/TiledCourse.git")
     
     # Send CASE and SITE files
     try:
@@ -115,11 +117,11 @@ if __name__ == '__main__':
 
         send_file_server(client,TileSet,".", FILECLASS, JOBPath)
         send_file_server(client,TileSet,".", CONFIGPATH, JOBPath)
-        send_file_server(client,TileSet,"DockerWebRTC", dockerRunHub.sh, JOBPath)
-        send_file_server(client,TileSet,"DockerWebRTC", dockerRunVm.sh, JOBPath)
+        send_file_server(client,TileSet,"DockerWebRTC", "dockerRunHub.sh", JOBPath)
+        send_file_server(client,TileSet,"DockerWebRTC", "dockerRunVm.sh", JOBPath)
         #send_file_server(client,TileSet,".", dockerCreateNetwork.sh, JOBPath)
         #send_file_server(client,TileSet,".", dockerConnection.sh, JOBPath)
-        send_file_server(client,TileSet,"DockerWebRTC", dockerStop.sh, JOBPath)
+        send_file_server(client,TileSet,"DockerWebRTC", "dockerStop.sh", JOBPath)
 
     except:
         print("Error sending files !")
