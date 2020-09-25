@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     # Send CASE and SITE files
     try:
-        send_file_server(client,TileSet,"TiledCourse", "build_nodes_file", JOBPath)
+        send_file_server(client,TileSet,"TiledCourse/directconnect", "build_nodes_file", JOBPath)
 
         send_file_server(client,TileSet,".", CASE_config, JOBPath)
         CASE_config=os.path.join(JOBPath,os.path.basename(CASE_config))

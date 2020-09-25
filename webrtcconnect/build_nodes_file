@@ -1,0 +1,93 @@
+#!/bin/bash 
+
+CASE_NAME=UNKNOWN
+NOVNC_URL='http://mycuster/kanaka-noVNC-33e1462/vnc_auto.html'
+
+CASE_SCRIPT=$(realpath ${1:-case_config.ini})
+SITE_SCRIPT=$(realpath ${2:-site_config.ini})
+TileSet=${3:-defaulTS}
+
+# get case-specifig config paths (overriding defaults)
+if [ -f "${CASE_SCRIPT}" ]; then
+  sed -e "s@\[CASE\]@#!/bin/bash@" "${CASE_SCRIPT}" > case_config
+  . case_config
+fi
+
+# get site-specifig config paths (overriding defaults)
+if [ -f "${SITE_SCRIPT}" ]; then
+  sed -e "s@\[SITE\]@#!/bin/bash@" "${SITE_SCRIPT}" > site_config
+  . site_config
+fi
+
+NUM=$( wc -l ${FILEPATH}| sed -e "s}^\([0-9]*\).*}\1}" )
+
+function min {
+   ( [ $1 -le $2 ] && echo $1 ) || ( [ $2 -lt $1 ] && echo $2 ) 
+}
+
+DATE=$(date +%F_%H-%M-%S)
+
+echo '{ "nodes": [' > nodes.json
+#echo 'echo '' >> nodes.json' >> nodes.json
+i=0
+while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
+    #&& IFS='' read -r -u4 line2
+
+  i2=$((2*(i+1)))
+  i0=$(printf "%03d" $((i+1)))
+
+  # Student values
+  IFS=';' read -r -a aline <<<$line
+
+  STUDENT=${aline[0]}
+  echo "Student : " ${STUDENT} 
+
+  MAILstudent=${aline[1]}
+  echo "Student mail : " ${MAILstudent} 
+
+  USERstudent=${aline[2]//[[:blank:]]/}
+  HOMEstudent=$HOMEstudents$USERstudent #TODO : change if home is in another place???
+  echo "Student home dir : $HOMEstudent"
+  
+  if [ $i -gt 0 ]; then
+      echo '},' >> nodes.json
+  fi
+
+  id
+  ls -la $HOMEstudent/.vnc/out_node_*
+  
+  if [ -e $HOMEstudent/.vnc/out_node_* ]; then
+      PORTID=$(basename $HOMEstudent/.vnc/out_node_* | sed -e 's&out_node_&&')
+      NODEFile=$HOMEstudent/.vnc/out_node_${PORTID}
+  else
+      echo "Student "${STUDENT} " has not already connect his vnc."
+      #sleep 10
+  fi
+
+  pass=${line##* }
+
+  echo '{"title": "'${STUDENT}'",' >> nodes.json
+
+  URL=$(echo $NOVNC_URL | envsubst) # expand envars in $NOVNC_URL
+  grep url ${NODEFile} |sed -e 's@"url" : "&port=@"url" : "'${URL}'?host='${HTTP_FRONTEND}'&true_color=1&encrypt=0&port=@' >> nodes.json
+
+  grep comment ${NODEFile} | sed -e "s&\": \"&\": \"${MAILstudent} &" >> nodes.json
+
+  echo ' "tags"  : ["'$TileSet'"],' >> nodes.json
+  echo '  "variable" : "ID-'$i0'",' >> nodes.json
+
+  echo '"connection" : 1' >> nodes.json
+  
+  i=$(( i + 1 ))
+done 3< ${FILEPATH}
+
+echo '}' >> nodes.json
+echo '] }' >> nodes.json
+
+echo "var text_ = " > nodes.js
+cat nodes.json >> nodes.js
+echo 'var jsDataTab = text_.nodes;' >> nodes.js
+
+#../../build_qr
+
+exit 0
