@@ -56,6 +56,7 @@ if __name__ == '__main__':
     # SenderName=${DATA[10]} # Nom de l'emetteur
     # SenderEmail=${DATA[11]} # Adresse email de l'emetteur
 
+    SOCKETdomain=config['CASE']['SOCKETdomain']
 
     # reader csv sur le configpath
     dataclass=[]
@@ -87,36 +88,42 @@ if __name__ == '__main__':
     CreateTS='create TS='+TileSet+' Nb='+str(NUM_STUDENTS)
     client.send_server(CreateTS)
     
-    FILECLASS=IdClassroom+os.path.basename(FILEPATH)+".list"
-    os.system("cp "+FILEPATH+" "+FILECLASS)
-
-    NOM_FICHIER_ETUDIANT_GENERE="generated_list/"+IdClassroom+"_classroom.list"
+    NOM_FICHIER_ETUDIANT_GENERE=IdClassroom+"_classroom.list"
 
     # IdClassroom < 65 ! car num port < 65535
-    RTMPPORT=IdClassroom+"000"
+    RTMPPORT=SOCKETdomain+"000"
 
     # get TiledCourse package from Github
     # os.system("git clone "repoDockerWebRTC+DockerWebRTC+".git")
-    os.system("tar xfz "+DockerWebRTC+".tgz")
+    COMMAND_TAR="tar xfz "+DockerWebRTC+".tgz"
+    print("command_tar : "+COMMAND_TAR)
+    os.system(COMMAND_TAR)
     
     #os.system("cp "+FILECLASS+" "+DockerWebRTC+"/original_list") => cf remarque README.md
-    
-    os.system("cd DockerWebRTC; ./fastGenerateMail.sh "+CONFIGPATH)
+
+    COMMAND_MAIL="cd DockerWebRTC; ./fastGenerateMail.sh "+CONFIGPATH
+    print("command_mail :"+COMMAND_MAIL)
+    os.system(COMMAND_MAIL)
 
     # get TiledCourse package from Github
-    os.system("git clone https://github.com/mmancip/TiledCourse.git")
+    COMMAND_GIT="git clone https://github.com/mmancip/TiledCourse.git"
+    print("command_git : "+COMMAND_GIT)
+    os.system(COMMAND_GIT)
     
     # Send CASE and SITE files
     try:
-        send_file_server(client,TileSet,"TiledCourse/webrtcconnect", "build_nodes_file", JOBPath)
-
+#        send_file_server(client,TileSet,"TiledCourse/webrtcconnect", "build_nodes_file", JOBPath)
+        send_file_server(client,TileSet,".", "build_nodes_file", JOBPath)
+        
         send_file_server(client,TileSet,".", CASE_config, JOBPath)
         CASE_config=os.path.join(JOBPath,os.path.basename(CASE_config))
         send_file_server(client,TileSet,".", SITE_config, JOBPath)
         SITE_config=os.path.join(JOBPath,os.path.basename(SITE_config))
 
-        send_file_server(client,TileSet,".", FILECLASS, JOBPath)
         send_file_server(client,TileSet,".", CONFIGPATH, JOBPath)
+        send_file_server(client,TileSet,".", FILEPATH, JOBPath)
+        send_file_server(client,TileSet,"DockerWebRTC/generated_list", NOM_FICHIER_ETUDIANT_GENERE, JOBPath)
+        send_file_server(client,TileSet,".", "list_hostsgpu", JOBPath)
         send_file_server(client,TileSet,"DockerWebRTC", "dockerRunHub.sh", JOBPath)
         send_file_server(client,TileSet,"DockerWebRTC", "dockerRunVm.sh", JOBPath)
         #send_file_server(client,TileSet,".", dockerCreateNetwork.sh, JOBPath)
@@ -131,11 +138,13 @@ if __name__ == '__main__':
         except SystemExit:
             pass
 
+
+        
     # ???? Comment 
     VideoDeviceNumber=str(0)
     
     def Run_Hub():
-        COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerRunHub.sh '+NOM_FICHIER_ETUDIANT_GENERE+' /home/myuser/.ssh/id_rsa.pub '+RTMPPORT+' '+SERVER_JITSI+' '+VideoDeviceNumber+' '+GPU_FILE
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerRunHub.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+HomeFront+'/.ssh/id_rsa.pub '+RTMPPORT+' '+SERVER_JITSI+' '+VideoDeviceNumber+' '+GPU_FILE
     
         print("\nCommand RunHub : "+COMMAND)
         client.send_server(COMMAND)
@@ -145,7 +154,7 @@ if __name__ == '__main__':
     Run_Hub()
 
     def Run_Vm():
-        COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerRunVm.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+VideoDeviceNumber+' '+GPU_FILE
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerRunVm.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+VideoDeviceNumber+' '+GPU_FILE+' '+SOCKETdomain
     
         print("\nCommand RunVm : "+COMMAND)
         client.send_server(COMMAND)
@@ -157,6 +166,10 @@ if __name__ == '__main__':
     # Build nodes.json file from new dockers list
     def build_nodes_file():
         print("Build nodes.json file from new dockers list.")
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' chmod u+x build_nodes_file '
+        client.send_server(COMMAND)
+        print("Out of chmod build_nodes_file : "+ str(client.get_OK()))
+
         COMMAND='launch TS='+TileSet+" "+JOBPath+' ./build_nodes_file '+CASE_config+' '+SITE_config+' '+TileSet
         print("\nCommand dockers : "+COMMAND)
 
@@ -184,6 +197,11 @@ if __name__ == '__main__':
         code.interact(banner="Interactive console to use actions directly :",local=dict(globals(), **locals()))
     except SystemExit:
         pass
+
+    client.send_server('execute TS='+TileSet+' killall Xvfb')
+    print("Out of killall command : "+ str(client.get_OK()))
+
+    client.send_server('launch TS='+TileSet+" "+JOBPath+" "+COMMANDStop)
 
     sys.exit(0)
 
