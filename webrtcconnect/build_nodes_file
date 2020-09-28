@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 CASE_NAME=UNKNOWN
 NOVNC_URL='http://mycuster/kanaka-noVNC-33e1462/vnc_auto.html'
@@ -19,6 +19,10 @@ if [ -f "${SITE_SCRIPT}" ]; then
   . site_config
 fi
 
+IFS=';' read -a DATA <<< $(cat ${CONFIGPATH} | sed 's/ *; */;/g')
+FILEPATH=${DATA[0]}
+IdClassroom=${DATA[1]}
+
 NUM=$( wc -l ${FILEPATH}| sed -e "s}^\([0-9]*\).*}\1}" )
 
 function min {
@@ -30,11 +34,12 @@ DATE=$(date +%F_%H-%M-%S)
 echo '{ "nodes": [' > nodes.json
 #echo 'echo '' >> nodes.json' >> nodes.json
 i=0
-while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
-    #&& IFS='' read -r -u4 line2
+while IFS=';' read -r -u3 line && IFS='' read -r -u4 line2 || [[ -n "$line" ]]; do
 
-  i2=$((2*(i+1)))
+  i2=$(printf "%03d" $((i+2)))
   i0=$(printf "%03d" $((i+1)))
+  thishost=${line2% *}
+  pass=${line2##* }
 
   # Student values
   IFS=';' read -r -a aline <<<$line
@@ -46,32 +51,17 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
   echo "Student mail : " ${MAILstudent} 
 
   USERstudent=${aline[2]//[[:blank:]]/}
-  HOMEstudent=$HOMEstudents$USERstudent #TODO : change if home is in another place???
-  echo "Student home dir : $HOMEstudent"
   
   if [ $i -gt 0 ]; then
       echo '},' >> nodes.json
   fi
 
-  id
-  ls -la $HOMEstudent/.vnc/out_node_*
-  
-  if [ -e $HOMEstudent/.vnc/out_node_* ]; then
-      PORTID=$(basename $HOMEstudent/.vnc/out_node_* | sed -e 's&out_node_&&')
-      NODEFile=$HOMEstudent/.vnc/out_node_${PORTID}
-  else
-      echo "Student "${STUDENT} " has not already connect his vnc."
-      #sleep 10
-  fi
-
-  pass=${line##* }
-
   echo '{"title": "'${STUDENT}'",' >> nodes.json
 
   URL=$(echo $NOVNC_URL | envsubst) # expand envars in $NOVNC_URL
-  grep url ${NODEFile} |sed -e 's@"url" : "&port=@"url" : "'${URL}'?host='${HTTP_FRONTEND}'&true_color=1&encrypt=0&port=@' >> nodes.json
+  echo ' "url" : "'${URL}'?host='${thishost}'&port='${SOCKETdomain}${i2}'&encrypt=0&password='${pass}'&true_color=1",' >> nodes.json
 
-  grep comment ${NODEFile} | sed -e "s&\": \"&\": \"${MAILstudent} &" >> nodes.json
+  echo ' "usersNotes"  : "node '$i'  : host '${thishost}' User mail '${MAILstudent}'",' >> nodes.json
 
   echo ' "tags"  : ["'$TileSet'"],' >> nodes.json
   echo '  "variable" : "ID-'$i0'",' >> nodes.json
@@ -79,7 +69,7 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
   echo '"connection" : 1' >> nodes.json
   
   i=$(( i + 1 ))
-done 3< ${FILEPATH}
+done 3< ${FILEPATH} 4< list_dockers_pass
 
 echo '}' >> nodes.json
 echo '] }' >> nodes.json
