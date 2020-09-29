@@ -1,0 +1,36 @@
+Subject: [${SCHOOL_NAME}] You are invited to join this new lesson.
+
+Bonjour ${STUDENT_NAME},
+
+
+Vous avez un cours à suivre le ${DATE_DMY} à ${DATE_HM} avec l'enseignant ${TEACHER_NAME}.
+Pour y assister, vous devrez rejoindre la session en cliquant sur le lien suivant:
+${JITSI_SESSION}
+
+Ou en utilisant l'application jitsi-electron qui vous a peut-être été demandé d'utiliser.
+
+Veuillez ne pas arriver en retard.
+
+
+Cordialement.
+
+Ceci est un message envoyé de manière automatique.
+Veuillez ne pas répondre à cette adresse.
+
+------
+
+Hello ${STUDENT_NAME},
+
+You have a lesson to following on ${DATE_DMY} at ${DATE_HM} with teacher ${TEACHER_NAME}.
+To attend, you must join the session by clicking on the following link:
+${JITSI_SESSION}
+
+Or by using the jitsi-electron application which you may have been asked to use.
+
+Please, don't be late.
+
+
+Best regards.
+
+This is an automated message.
+Please don't reply to this address.
