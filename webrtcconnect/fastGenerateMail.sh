@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash -vx
 
 FileName=$1
 
@@ -17,12 +17,12 @@ then
 	TeacherFirstname=${DATA[2]}
 	TeacherLastname=${DATA[3]}
 	TeacherEmail=${DATA[4]}
-	DateDMY=${DATA[6]} # Jour du cour
-	DateHM=${DATA[7]} # Heure du cour
-	JitsiServer=${DATA[8]} # Adresse Jitsi sans https://
-	SchoolName=${DATA[9]} # Nom de l'ecole
-	SenderName=${DATA[10]} # Nom de l'emetteur
-	SenderEmail=${DATA[11]} # Adresse email de l'emetteur
+	DateDMY=${DATA[5]} # Jour du cours
+	DateHM=${DATA[6]} # Heure du cours
+	JitsiServer=${DATA[7]} # Adresse Jitsi sans https://
+	SchoolName=${DATA[8]} # Nom de l'ecole
+	SenderName=${DATA[9]} # Nom de l'emetteur
+	SenderEmail=${DATA[10]} # Adresse email de l'emetteur
 	
 
 	GeneratedList=$(./generateListRoom.sh \
