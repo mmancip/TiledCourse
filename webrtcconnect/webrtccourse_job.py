@@ -37,6 +37,7 @@ if __name__ == '__main__':
     HTTP_IP=config['SITE']['HTTP_IP']
     init_IP=config['SITE']['init_IP']
 
+    TILEDOCKERS_path=config['SITE']['TILEDOCKER_DIR']
     DOCKERSPACE_DIR=config['SITE']['DOCKERSPACE_DIR']
 
     GPU_FILE=config['SITE']['GPU_FILE']
@@ -53,12 +54,12 @@ if __name__ == '__main__':
     # TeacherFirstname=${DATA[2]}
     # TeacherLastname=${DATA[3]}
     # TeacherEmail=${DATA[4]}
-    # DateDMY=${DATA[6]} # Jour du cours
-    # DateHM=${DATA[7]} # Heure du cours
-    # JitsiServer=${DATA[8]} # Adresse Jitsi sans https://
-    # SchoolName=${DATA[9]} # Nom de l'ecole
-    # SenderName=${DATA[10]} # Nom de l'emetteur
-    # SenderEmail=${DATA[11]} # Adresse email de l'emetteur
+    # DateDMY=${DATA[5]} # Jour du cours
+    # DateHM=${DATA[6]} # Heure du cours
+    # JitsiServer=${DATA[7]} # Adresse Jitsi sans https://
+    # SchoolName=${DATA[8]} # Nom de l'ecole
+    # SenderName=${DATA[9]} # Nom de l'emetteur
+    # SenderEmail=${DATA[10]} # Adresse email de l'emetteur
 
     SOCKETdomain=config['CASE']['SOCKETdomain']
 
@@ -74,6 +75,7 @@ if __name__ == '__main__':
             return x
     OPTIONS=OPTIONS.replace("JOBPath",JOBPath)
     OPTIONS=OPTIONS.replace('{','|{').replace('}','}|').split('|')
+    OPTIONS="".join(list(map( replaceconf,OPTIONS)))
 
     # reader csv sur le configpath
     dataclass=[]
@@ -90,13 +92,8 @@ if __name__ == '__main__':
     TeacherFirstname=dataclass[0][2]
     TeacherLastname=dataclass[0][3]
     TeacherEmail=dataclass[0][4]
-    DateDMY=dataclass[0][6] # Jour du cours
-    DateHM=dataclass[0][7] # Heure du cours
-
-    # JitsiServer=${DATA[8]} # Adresse Jitsi sans https://
-    # SchoolName=${DATA[9]} # Nom de l'ecole
-    # SenderName=${DATA[10]} # Nom de l'emetteur
-    # SenderEmail=${DATA[11]} # Adresse email de l'emetteur
+    DateDMY=dataclass[0][5] # Jour du cours
+    DateHM=dataclass[0][6] # Heure du cours
     
     def countlines(filename):
         f = open(filename) 
@@ -127,15 +124,14 @@ if __name__ == '__main__':
     print("command_git : "+COMMAND_GIT)
     os.system(COMMAND_GIT)
     
-    COMMAND_MAIL="cd TiledCourse/webrtccourse;  ./fastGenerateMail.sh "+CONFIGPATH
+    os.system('cp '+CONFIGPATH+' TiledCourse/webrtcconnect')
+    os.system('cp '+FILEPATH+' TiledCourse/webrtcconnect')
+    COMMAND_MAIL="cd TiledCourse/webrtcconnect;  ./fastGenerateMail.sh "+CONFIGPATH
     print("command_mail :"+COMMAND_MAIL)
     os.system(COMMAND_MAIL)
 
     # Send CASE and SITE files
     try:
-#        send_file_server(client,TileSet,"TiledCourse/webrtcconnect", "build_nodes_file", JOBPath)
-        send_file_server(client,TileSet,".", "build_nodes_file", JOBPath)
-        
         send_file_server(client,TileSet,".", CASE_config, JOBPath)
         CASE_config=os.path.join(JOBPath,os.path.basename(CASE_config))
         send_file_server(client,TileSet,".", SITE_config, JOBPath)
@@ -143,9 +139,11 @@ if __name__ == '__main__':
 
         send_file_server(client,TileSet,".", CONFIGPATH, JOBPath)
         send_file_server(client,TileSet,".", FILEPATH, JOBPath)
-        send_file_server(client,TileSet,"TiledCourse/webrtccourse", NOM_FICHIER_ETUDIANT_GENERE, JOBPath)
         send_file_server(client,TileSet,".", "list_hostsgpu", JOBPath)
-        send_file_server(client,TileSet,"TiledCourse/webrtccourse/DockerHub", "dockerRunHub.sh", JOBPath)
+        send_file_server(client,TileSet,"TiledCourse/webrtcconnect/", NOM_FICHIER_ETUDIANT_GENERE, JOBPath)
+        send_file_server(client,TileSet,"TiledCourse/webrtcconnect/DockerHub", "dockerRunHub.sh", JOBPath)
+        send_file_server(client,TileSet,"TiledCourse/webrtcconnect", "build_nodes_file", JOBPath)
+        
         #send_file_server(client,TileSet,".", dockerCreateNetwork.sh, JOBPath)
         #send_file_server(client,TileSet,".", dockerConnection.sh, JOBPath)
 
@@ -173,18 +171,19 @@ if __name__ == '__main__':
     Run_Hub()
 
 
+    REF_CAS=str(NUM_STUDENTS)+" "+DATE+" "+DOCKERSPACE_DIR+" "+DOCKER_NAME
+    
     COMMANDStop=os.path.join(TILEDOCKERS_path,"stop_dockers")+" "+REF_CAS+" "+os.path.join(JOBPath,GPU_FILE)
     print("\n"+COMMANDStop)
 
     network="classroom"+IdClassroom
     nethost="VM"
     domain="11.0.0"
+
     OPTIONS=OPTIONS+" -e ID_CLASSROOM="+IdClassroom+" --device=/dev/video"+VideoDeviceNumber
     
     def Run_Vm():
         # Launch containers HERE
-        REF_CAS=str(NUM_STUDENTS)+" "+DATE+" "+DOCKERSPACE_DIR+" "+DOCKER_NAME
-
         COMMAND=os.path.join(TILEDOCKERS_path,"launch_dockers")+" "+REF_CAS+" "+GPU_FILE+" "+HTTP_FRONTEND+":"+HTTP_IP+\
              " "+network+" "+nethost+" "+domain+" "+init_IP+" TileSetPort "+UserFront+"@"+Frontend+" "+OPTIONS
         print("\nCommand RunVm : "+COMMAND)
@@ -215,8 +214,9 @@ if __name__ == '__main__':
     # TODO :
     # Prof OBS + rtmp://Host_DU_HUB:RTMPport/live
     # dockerconnection : 
-    #ssh -p${PORT_SSH_HUB} -R4000:/run/user/$(id -u)/pulse/native myuser@${Host_DU_HUB}
-
+    #ssh  -R4000:/run/user/$(id -u)/pulse/native @${Host_DU_HUB}
+    #p${PORT_SSH_HUB} => pas besoin de copie du ssh.pub
+    
     # startClass :
     def getteachervideo():
         COMMAND_ffmpeg="/opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" &"    
@@ -249,7 +249,7 @@ if __name__ == '__main__':
             client.get_OK()
 
     # Toutes les VM
-    time.sleep 3
+    time.sleep(3)
     #	./mute ${VM_NAME}
     #	./audioOff ${VM_NAME}
     
