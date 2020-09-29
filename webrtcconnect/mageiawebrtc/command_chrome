@@ -1,0 +1,10 @@
+#!/bin/bash
+
+JITSI_SERVER=$1
+TEACHER_NAME=$2
+TEACHER_EMAIL=$3
+roomName=$4
+
+export DISPLAY=:1.0;
+
+google-chrome "https://${JITSI_SERVER}/${roomName}#config.prejoinPageEnabled=false&userInfo.displayName=%22${TEACHER_NAME}%22&userInfo.email=%22${TEACHER_EMAIL}%22&interfaceConfig.DISABLE_VIDEO_BACKGROUND=true&interfaceConfig.SHOW_CHROME_EXTENSION_BANNER=false" --no-first-run --start-fullscreen --use-fake-ui-for-media-stream --test-type --disable-dev-shm-usage > /home/myuser/.vnc/out_chrome 2>&1 &

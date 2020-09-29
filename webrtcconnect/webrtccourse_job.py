@@ -34,6 +34,10 @@ if __name__ == '__main__':
     NOVNC_URL=config['SITE']['NOVNC_URL']
 
     HTTP_FRONTEND=config['SITE']['HTTP_FRONTEND']
+    HTTP_IP=config['SITE']['HTTP_IP']
+    init_IP=config['SITE']['init_IP']
+
+    DOCKERSPACE_DIR=config['SITE']['DOCKERSPACE_DIR']
 
     GPU_FILE=config['SITE']['GPU_FILE']
 
@@ -49,14 +53,27 @@ if __name__ == '__main__':
     # TeacherFirstname=${DATA[2]}
     # TeacherLastname=${DATA[3]}
     # TeacherEmail=${DATA[4]}
-    # DateDMY=${DATA[6]} # Jour du cour
-    # DateHM=${DATA[7]} # Heure du cour
+    # DateDMY=${DATA[6]} # Jour du cours
+    # DateHM=${DATA[7]} # Heure du cours
     # JitsiServer=${DATA[8]} # Adresse Jitsi sans https://
     # SchoolName=${DATA[9]} # Nom de l'ecole
     # SenderName=${DATA[10]} # Nom de l'emetteur
     # SenderEmail=${DATA[11]} # Adresse email de l'emetteur
 
     SOCKETdomain=config['CASE']['SOCKETdomain']
+
+    DOCKER_NAME=config['CASE']['DOCKER_NAME']
+
+    OPTIONS=config['CASE']['OPTIONS'].replace("$","").replace('"','')
+    print("\nOPTIONS from CASE_CONFIG : "+OPTIONS)
+    def replaceconf(x):
+        if (re.search('}',x)):
+            varname=x.replace("{","").replace("}","")
+            return config['CASE'][varname]
+        else:
+            return x
+    OPTIONS=OPTIONS.replace("JOBPath",JOBPath)
+    OPTIONS=OPTIONS.replace('{','|{').replace('}','}|').split('|')
 
     # reader csv sur le configpath
     dataclass=[]
@@ -70,6 +87,16 @@ if __name__ == '__main__':
 
     FILEPATH=dataclass[0][0]
     IdClassroom=dataclass[0][1]
+    TeacherFirstname=dataclass[0][2]
+    TeacherLastname=dataclass[0][3]
+    TeacherEmail=dataclass[0][4]
+    DateDMY=dataclass[0][6] # Jour du cours
+    DateHM=dataclass[0][7] # Heure du cours
+
+    # JitsiServer=${DATA[8]} # Adresse Jitsi sans https://
+    # SchoolName=${DATA[9]} # Nom de l'ecole
+    # SenderName=${DATA[10]} # Nom de l'emetteur
+    # SenderEmail=${DATA[11]} # Adresse email de l'emetteur
     
     def countlines(filename):
         f = open(filename) 
@@ -93,23 +120,17 @@ if __name__ == '__main__':
     # IdClassroom < 65 ! car num port < 65535
     RTMPPORT=SOCKETdomain+"000"
 
-    # get TiledCourse package from Github
-    # os.system("git clone "repoDockerWebRTC+DockerWebRTC+".git")
-    COMMAND_TAR="tar xfz "+DockerWebRTC+".tgz"
-    print("command_tar : "+COMMAND_TAR)
-    os.system(COMMAND_TAR)
-    
     #os.system("cp "+FILECLASS+" "+DockerWebRTC+"/original_list") => cf remarque README.md
-
-    COMMAND_MAIL="cd DockerWebRTC; ./fastGenerateMail.sh "+CONFIGPATH
-    print("command_mail :"+COMMAND_MAIL)
-    os.system(COMMAND_MAIL)
 
     # get TiledCourse package from Github
     COMMAND_GIT="git clone https://github.com/mmancip/TiledCourse.git"
     print("command_git : "+COMMAND_GIT)
     os.system(COMMAND_GIT)
     
+    COMMAND_MAIL="cd TiledCourse/webrtccourse;  ./fastGenerateMail.sh "+CONFIGPATH
+    print("command_mail :"+COMMAND_MAIL)
+    os.system(COMMAND_MAIL)
+
     # Send CASE and SITE files
     try:
 #        send_file_server(client,TileSet,"TiledCourse/webrtcconnect", "build_nodes_file", JOBPath)
@@ -122,13 +143,11 @@ if __name__ == '__main__':
 
         send_file_server(client,TileSet,".", CONFIGPATH, JOBPath)
         send_file_server(client,TileSet,".", FILEPATH, JOBPath)
-        send_file_server(client,TileSet,"DockerWebRTC/generated_list", NOM_FICHIER_ETUDIANT_GENERE, JOBPath)
+        send_file_server(client,TileSet,"TiledCourse/webrtccourse", NOM_FICHIER_ETUDIANT_GENERE, JOBPath)
         send_file_server(client,TileSet,".", "list_hostsgpu", JOBPath)
-        send_file_server(client,TileSet,"DockerWebRTC", "dockerRunHub.sh", JOBPath)
-        send_file_server(client,TileSet,"DockerWebRTC", "dockerRunVm.sh", JOBPath)
+        send_file_server(client,TileSet,"TiledCourse/webrtccourse/DockerHub", "dockerRunHub.sh", JOBPath)
         #send_file_server(client,TileSet,".", dockerCreateNetwork.sh, JOBPath)
         #send_file_server(client,TileSet,".", dockerConnection.sh, JOBPath)
-        send_file_server(client,TileSet,"DockerWebRTC", "dockerStop.sh", JOBPath)
 
     except:
         print("Error sending files !")
@@ -153,15 +172,28 @@ if __name__ == '__main__':
         print("Out of launch Hub : "+ str(client.get_OK()))
     Run_Hub()
 
-    def Run_Vm():
-        COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerRunVm.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+VideoDeviceNumber+' '+GPU_FILE+' '+SOCKETdomain
+
+    COMMANDStop=os.path.join(TILEDOCKERS_path,"stop_dockers")+" "+REF_CAS+" "+os.path.join(JOBPath,GPU_FILE)
+    print("\n"+COMMANDStop)
+
+    network="classroom"+IdClassroom
+    nethost="VM"
+    domain="11.0.0"
+    OPTIONS=OPTIONS+" -e ID_CLASSROOM="+IdClassroom+" --device=/dev/video"+VideoDeviceNumber
     
+    def Run_Vm():
+        # Launch containers HERE
+        REF_CAS=str(NUM_STUDENTS)+" "+DATE+" "+DOCKERSPACE_DIR+" "+DOCKER_NAME
+
+        COMMAND=os.path.join(TILEDOCKERS_path,"launch_dockers")+" "+REF_CAS+" "+GPU_FILE+" "+HTTP_FRONTEND+":"+HTTP_IP+\
+             " "+network+" "+nethost+" "+domain+" "+init_IP+" TileSetPort "+UserFront+"@"+Frontend+" "+OPTIONS
         print("\nCommand RunVm : "+COMMAND)
         client.send_server(COMMAND)
 
         #code.interact(local=locals())
         print("Out of launch Vm : "+ str(client.get_OK()))
     Run_Vm()
+
     
     # Build nodes.json file from new dockers list
     def build_nodes_file():
@@ -179,6 +211,48 @@ if __name__ == '__main__':
         get_file_client(client,TileSet,JOBPath,"nodes.json",".")
 
     build_nodes_file()
+
+    # TODO :
+    # Prof OBS + rtmp://Host_DU_HUB:RTMPport/live
+    # dockerconnection : 
+    #ssh -p${PORT_SSH_HUB} -R4000:/run/user/$(id -u)/pulse/native myuser@${Host_DU_HUB}
+
+    # startClass :
+    def getteachervideo():
+        COMMAND_ffmpeg="/opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" &"    
+        client.send_server('execute TS='+TileSet+' '+COMMAND_ffmpeg)
+        print("Out of ffmpeg : "+ str(client.get_OK()))
+    getteachervideo()
+    
+    ## Need a sleep to wait the connection between ffmpeg & the streaming server
+    time.sleep(5)
+
+    # Launch google-chrome
+    COMMAND_CHROME="/opt/command_chrome "+' '+SERVER_JITSI+' '+TeacherFirstname+'_'+TeacherLastname
+
+    with open(FILEPATH) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=';')
+        count_lines=0
+        for row in csv_reader:
+
+            print(", ".join(row))
+            count_lines=count_lines+1
+
+            roomName=row[2]
+
+            TilesStr=' Tiles=('+containerId(count_lines)+') '     
+            COMMAND_CHROMEi=COMMAND_CHROME+" "+roomName+" &"
+            
+            print("%d VMD command : %s" % (count_lines,COMMAND_CHROMEi))
+            CommandTS='execute TS='+TileSet+TilesStr+COMMAND_CHROMEi
+            client.send_server(CommandTS)
+            client.get_OK()
+
+    # Toutes les VM
+    time.sleep 3
+    #	./mute ${VM_NAME}
+    #	./audioOff ${VM_NAME}
+    
 
     # # Launch Server for commands from FlaskDock
     # print("GetActions=ClientAction("+str(connectionId)+",globals=dict(globals()),locals=dict(**locals()))")
@@ -198,7 +272,7 @@ if __name__ == '__main__':
     except SystemExit:
         pass
 
-    client.send_server('execute TS='+TileSet+' killall Xvfb')
+    client.send_server('execute TS='+TileSet+' killall Xvnc')
     print("Out of killall command : "+ str(client.get_OK()))
 
     client.send_server('launch TS='+TileSet+" "+JOBPath+" "+COMMANDStop)
