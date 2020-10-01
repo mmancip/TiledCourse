@@ -65,6 +65,8 @@ if __name__ == '__main__':
 
     DOCKER_NAME=config['CASE']['DOCKER_NAME']
 
+    HTTP_LOGIN=config['CASE']['HTTP_LOGIN']
+    
     OPTIONS=config['CASE']['OPTIONS'].replace("$","").replace('"','')
     print("\nOPTIONS from CASE_CONFIG : "+OPTIONS)
     def replaceconf(x):
@@ -123,6 +125,7 @@ if __name__ == '__main__':
     COMMAND_GIT="git clone https://github.com/mmancip/TiledCourse.git"
     print("command_git : "+COMMAND_GIT)
     os.system(COMMAND_GIT)
+
     
     os.system('cp '+CONFIGPATH+' TiledCourse/webrtcconnect')
     os.system('cp '+FILEPATH+' TiledCourse/webrtcconnect')
@@ -166,9 +169,16 @@ if __name__ == '__main__':
         print("\nCommand RunHub : "+COMMAND)
         client.send_server(COMMAND)
 
-        #code.interact(local=locals())
         print("Out of launch Hub : "+ str(client.get_OK()))
     Run_Hub()
+
+    def Kill_Hub():
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerStop.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+GPU_FILE
+    
+        print("\nCommand stop Hub : "+COMMAND)
+        client.send_server(COMMAND)
+
+        print("Out of stop Hub : "+ str(client.get_OK()))
 
 
     REF_CAS=str(NUM_STUDENTS)+" "+DATE+" "+DOCKERSPACE_DIR+" "+DOCKER_NAME
@@ -185,12 +195,12 @@ if __name__ == '__main__':
     def Run_Vm():
         # Launch containers HERE
         COMMAND=os.path.join(TILEDOCKERS_path,"launch_dockers")+" "+REF_CAS+" "+GPU_FILE+" "+HTTP_FRONTEND+":"+HTTP_IP+\
-             " "+network+" "+nethost+" "+domain+" "+init_IP+" TileSetPort "+UserFront+"@"+Frontend+" "+OPTIONS
+                 " "+network+" "+nethost+" "+domain+" "+init_IP+" TileSetPort "+UserFront+"@"+Frontend+" "+OPTIONS
         print("\nCommand RunVm : "+COMMAND)
-        client.send_server(COMMAND)
-
-        #code.interact(local=locals())
+        client.send_server('launch TS='+TileSet+" "+JOBPath+' '+COMMAND)
+        sys.stdout.flush()
         print("Out of launch Vm : "+ str(client.get_OK()))
+
     Run_Vm()
 
     
@@ -211,7 +221,23 @@ if __name__ == '__main__':
 
     build_nodes_file()
 
-    # TODO :
+    # Launch docker tools
+    def launch_tunnel():
+        client.send_server('execute TS='+TileSet+' /opt/tunnel_ssh '+SOCKETdomain+' '+HTTP_FRONTEND+' '+HTTP_LOGIN)
+        print("Out of tunnel_ssh : "+ str(client.get_OK()))
+    launch_tunnel()
+
+    def launch_vnc():
+        client.send_server('execute TS='+TileSet+' /opt/vnccommand')
+        print("Out of vnccommand : "+ str(client.get_OK()))
+    launch_vnc()
+
+    def launch_resize(RESOL="1440x900"):
+        client.send_server('execute TS='+TileSet+' xrandr --fb '+RESOL)
+        print("Out of xrandr : "+ str(client.get_OK()))
+    launch_resize()
+
+    # TODO Poste du prof :
     # Prof OBS + rtmp://Host_DU_HUB:RTMPport/live
     # dockerconnection : 
     #ssh  -R4000:/run/user/$(id -u)/pulse/native @${Host_DU_HUB}
@@ -222,61 +248,60 @@ if __name__ == '__main__':
         COMMAND_ffmpeg="/opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" &"    
         client.send_server('execute TS='+TileSet+' '+COMMAND_ffmpeg)
         print("Out of ffmpeg : "+ str(client.get_OK()))
-    getteachervideo()
+    #getteachervideo()
     
     ## Need a sleep to wait the connection between ffmpeg & the streaming server
-    time.sleep(5)
+    #time.sleep(5)
 
     # Launch google-chrome
-    COMMAND_CHROME="/opt/command_chrome "+' '+SERVER_JITSI+' '+TeacherFirstname+'_'+TeacherLastname
+    def launch_chrome():
+        COMMAND_CHROME="/opt/command_chrome "+' '+SERVER_JITSI+' '+TeacherFirstname+'_'+TeacherLastname
 
-    with open(FILEPATH) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=';')
-        count_lines=0
-        for row in csv_reader:
+        with open(FILEPATH) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=';')
+            count_lines=0
+            for row in csv_reader:
 
-            print(", ".join(row))
-            count_lines=count_lines+1
+                print(", ".join(row))
+                count_lines=count_lines+1
 
-            roomName=row[2]
+                roomName=row[2]
 
-            TilesStr=' Tiles=('+containerId(count_lines)+') '     
-            COMMAND_CHROMEi=COMMAND_CHROME+" "+roomName+" &"
+                TilesStr=' Tiles=('+containerId(count_lines)+') '     
+                COMMAND_CHROMEi=COMMAND_CHROME+" "+roomName+" &"
             
-            print("%d VMD command : %s" % (count_lines,COMMAND_CHROMEi))
-            CommandTS='execute TS='+TileSet+TilesStr+COMMAND_CHROMEi
-            client.send_server(CommandTS)
-            client.get_OK()
+                print("%d VMD command : %s" % (count_lines,COMMAND_CHROMEi))
+                CommandTS='execute TS='+TileSet+TilesStr+COMMAND_CHROMEi
+                client.send_server(CommandTS)
+                client.get_OK()
+                
+                
+    #time.sleep(3)
 
-    # Toutes les VM
-    time.sleep(3)
+    # TODO Poste du prof :
     #	./mute ${VM_NAME}
     #	./audioOff ${VM_NAME}
     
-
+    def kill_all_containers():
+        Kill_Hub()
+        client.send_server('execute TS='+TileSet+' killall Xvnc')
+        print("Out of killall command : "+ str(client.get_OK()))
+        client.send_server('launch TS='+TileSet+" "+JOBPath+" "+COMMANDStop)
+        client.close()
+        
     # # Launch Server for commands from FlaskDock
     # print("GetActions=ClientAction("+str(connectionId)+",globals=dict(globals()),locals=dict(**locals()))")
     # sys.stdout.flush()
-
-    # try:
-    #     GetActions=ClientAction(connectionId,globals=dict(globals()),locals=dict(**locals()))
-    #     outHandler.flush()
-    # except:
-    #     traceback.print_exc(file=sys.stdout)
-    #     code.interact(banner="Error ClientAction :",local=dict(globals(), **locals()))
-
+    
     print("Actions \n",str(tiles_actions))
     sys.stdout.flush()
     try:
         code.interact(banner="Interactive console to use actions directly :",local=dict(globals(), **locals()))
     except SystemExit:
         pass
-
-    client.send_server('execute TS='+TileSet+' killall Xvnc')
-    print("Out of killall command : "+ str(client.get_OK()))
-
-    client.send_server('launch TS='+TileSet+" "+JOBPath+" "+COMMANDStop)
-
+    
+    kill_all_containers()
+    
     sys.exit(0)
 
 

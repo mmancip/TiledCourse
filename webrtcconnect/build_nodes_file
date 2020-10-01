@@ -36,7 +36,7 @@ echo '{ "nodes": [' > nodes.json
 i=0
 while IFS=';' read -r -u3 line && IFS='' read -r -u4 line2 || [[ -n "$line" ]]; do
 
-  i2=$(printf "%03d" $((i+2)))
+  i2=$((2*(i+1)))
   i0=$(printf "%03d" $((i+1)))
   thishost=${line2% *}
   pass=${line2##* }
@@ -56,10 +56,10 @@ while IFS=';' read -r -u3 line && IFS='' read -r -u4 line2 || [[ -n "$line" ]]; 
       echo '},' >> nodes.json
   fi
 
-  echo '{"title": "'${STUDENT}'",' >> nodes.json
+  echo '{"title" : "'${STUDENT}'",' >> nodes.json
 
   URL=$(echo $NOVNC_URL | envsubst) # expand envars in $NOVNC_URL
-  echo ' "url" : "'${URL}'?host='${thishost}'&port='${SOCKETdomain}${i2}'&encrypt=0&password='${pass}'&true_color=1",' >> nodes.json
+  echo ' "url" : "'${URL}'?host='${HTTP_FRONTEND}'&port='${SOCKETdomain}${i0}'&encrypt=0&password='${pass}'&true_color=1",' >> nodes.json
 
   echo ' "usersNotes"  : "node '$i'  : host '${thishost}' User mail '${MAILstudent}'",' >> nodes.json
 
