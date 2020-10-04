@@ -1,13 +1,17 @@
 #!/bin/bash
 
 StudentFileName=$1
-PKFileName=$2
-RTMPPort=$3
-JitsiServer=$4
-VideoDevice=$5
-HostFile=$6
+#PKFileName=$2
+RTMPPort=$2
+JitsiServer=$3
+VideoDevice=$4
+HostFile=$5
+network=$6
+domain=$7
+init_IP=$8
+CLIENT=$9
 
-if [ "$#" -eq 6 ]
+if [ "$#" -eq 9 ]
 then
 
 	OLDIFS="$IFS"
@@ -32,17 +36,21 @@ then
 	thispath=$(dirname ${BASH_SOURCE[0]})
 
 	SSHPort=$IdClassroom"222"
-	ssh ${realhost} docker create -p 0.0.0.0:${SSHPort}:22 \
-		-p 0.0.0.0:${RTMPPort}:1935 \
-		-e ID_CLASSROOM="${IdClassroom}" \
-		-e VIDEO_DEVICE="${VideoDevice}" \
-		-e JITSI_SERVER="${JitsiServer}" \
-		-e TEACHER_NAME="${TEACHER_NAME}" \
-		-e TEACHER_EMAIL="${TEACHER_EMAIL}" \
-		--net classroom${IdClassroom} \
-		--hostname HUB-CR${IdClassroom} \
-		--name HUB-CR${IdClassroom} \
-		--rm hub_dev_classroom:1.1
+	ssh ${realhost} docker create \
+	    -p 0.0.0.0:${SSHPort}:22 \
+	    -p 22 \
+	    -p 0.0.0.0:${RTMPPort}:1935 \
+	    -e ID_CLASSROOM="${IdClassroom}" \
+	    -e VIDEO_DEVICE="${VideoDevice}" \
+	    -e JITSI_SERVER="${JitsiServer}" \
+	    -e TEACHER_NAME="${TEACHER_NAME}" \
+	    -e TEACHER_EMAIL="${TEACHER_EMAIL}" \
+	    --add-host ${CLIENT} \
+	    --net ${network} \
+	    --ip=${domain}.$((init_IP-1)) \
+	    --hostname HUB-CR${IdClassroom} \
+	    --name HUB-CR${IdClassroom} \
+	    --rm hub_dev_classroom:1.1
 
 	DIR=/tmp/Hub_$(date +%F_%H-%M-%S)
 
@@ -52,9 +60,9 @@ then
 	ssh ${realhost} docker cp $DIR/${StudentFileName} \
 		HUB-CR${IdClassroom}:/home/myuser/students.list
 
-	scp ${PKFileName} ${realhost}:$DIR
-	ssh ${realhost} docker cp $DIR/${PKFileName} \
-		HUB-CR${IdClassroom}:/home/myuser/.ssh/classroom${IdClassroom}.pub
+	# scp ${PKFileName} ${realhost}:$DIR
+	# ssh ${realhost} docker cp $DIR/${PKFileName} \
+	# 	HUB-CR${IdClassroom}:/home/myuser/.ssh/classroom${IdClassroom}.pub
 	
 	ssh ${realhost} rm -rf $DIR
 

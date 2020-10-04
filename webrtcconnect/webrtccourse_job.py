@@ -144,7 +144,11 @@ if __name__ == '__main__':
         send_file_server(client,TileSet,".", FILEPATH, JOBPath)
         send_file_server(client,TileSet,".", "list_hostsgpu", JOBPath)
         send_file_server(client,TileSet,"TiledCourse/webrtcconnect/", NOM_FICHIER_ETUDIANT_GENERE, JOBPath)
-        send_file_server(client,TileSet,"TiledCourse/webrtcconnect/DockerHub", "dockerRunHub.sh", JOBPath)
+        send_file_server(client,TileSet,".", "dockerRunHub.sh", JOBPath)
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' chmod u+x ./dockerRunHub.sh'
+        client.send_server(COMMAND)
+        client.get_OK()
+        #send_file_server(client,TileSet,"TiledCourse/webrtcconnect/DockerHub", "dockerRunHub.sh", JOBPath)
         send_file_server(client,TileSet,"TiledCourse/webrtcconnect", "build_nodes_file", JOBPath)
         
         #send_file_server(client,TileSet,".", dockerCreateNetwork.sh, JOBPath)
@@ -163,8 +167,17 @@ if __name__ == '__main__':
     # ???? Comment 
     VideoDeviceNumber=str(0)
     
+    network="classroom"+IdClassroom
+    #"X"
+    domain="11.0.0"
+
+    CLIENT=HTTP_FRONTEND+":"+HTTP_IP
+    
     def Run_Hub():
-        COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerRunHub.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+HomeFront+'/.ssh/id_rsa.pub '+RTMPPORT+' '+SERVER_JITSI+' '+VideoDeviceNumber+' '+GPU_FILE
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerRunHub.sh '+\
+            NOM_FICHIER_ETUDIANT_GENERE+' '+\
+            RTMPPORT+' '+SERVER_JITSI+' '+VideoDeviceNumber+' '+\
+            GPU_FILE+" "+network+" "+domain+" "+init_IP+" "+CLIENT
     
         print("\nCommand RunHub : "+COMMAND)
         client.send_server(COMMAND)
@@ -172,6 +185,8 @@ if __name__ == '__main__':
         print("Out of launch Hub : "+ str(client.get_OK()))
     Run_Hub()
 
+    # IP from Hub : domain.INIT_IP-1
+    
     def Kill_Hub():
         COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerStop.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+GPU_FILE
     
@@ -186,15 +201,13 @@ if __name__ == '__main__':
     COMMANDStop=os.path.join(TILEDOCKERS_path,"stop_dockers")+" "+REF_CAS+" "+os.path.join(JOBPath,GPU_FILE)
     print("\n"+COMMANDStop)
 
-    network="classroom"+IdClassroom
     nethost="VM"
-    domain="11.0.0"
 
     OPTIONS=OPTIONS+" -e ID_CLASSROOM="+IdClassroom+" --device=/dev/video"+VideoDeviceNumber
     
     def Run_Vm():
         # Launch containers HERE
-        COMMAND=os.path.join(TILEDOCKERS_path,"launch_dockers")+" "+REF_CAS+" "+GPU_FILE+" "+HTTP_FRONTEND+":"+HTTP_IP+\
+        COMMAND=os.path.join(TILEDOCKERS_path,"launch_dockers")+" "+REF_CAS+" "+GPU_FILE+" "+CLIENT+\
                  " "+network+" "+nethost+" "+domain+" "+init_IP+" TileSetPort "+UserFront+"@"+Frontend+" "+OPTIONS
         print("\nCommand RunVm : "+COMMAND)
         client.send_server('launch TS='+TileSet+" "+JOBPath+' '+COMMAND)
@@ -221,6 +234,7 @@ if __name__ == '__main__':
 
     build_nodes_file()
 
+    time.sleep(2)
     # Launch docker tools
     def launch_tunnel():
         client.send_server('execute TS='+TileSet+' /opt/tunnel_ssh '+SOCKETdomain+' '+HTTP_FRONTEND+' '+HTTP_LOGIN)
@@ -239,9 +253,18 @@ if __name__ == '__main__':
 
     # TODO Poste du prof :
     # Prof OBS + rtmp://Host_DU_HUB:RTMPport/live
-    # dockerconnection : 
+
+    # Copy connection key to HTTP_FRONTEND to HUB => 
+    # Add pulseaudio tunnel :
+    # TODO reverse (native socket pulseaudio in Hub)
     #ssh  -R4000:/run/user/$(id -u)/pulse/native @${Host_DU_HUB}
     #p${PORT_SSH_HUB} => pas besoin de copie du ssh.pub
+
+    # Pulse VM : 
+    # "ssh -4 -fNT \
+    # -L${PULSESERVER_PORT}:localhost:${PULSESERVER_PORT} \
+    # myuser@HUB-CR${ID_CLASSROOM}"
+
     
     # startClass :
     def getteachervideo():
