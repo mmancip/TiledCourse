@@ -15,5 +15,7 @@ RUN atd &
 RUN urpmi.addmedia Google\ Chrome\ 64bit http://dl.google.com/linux/chrome/rpm/stable/x86_64 && \
     urpmi -y --force  google-chrome-stable 
 
+RUN urpmi ffmpeg
+
 COPY command_chrome /opt
 COPY command_ffmpeg /opt
