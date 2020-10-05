@@ -144,11 +144,12 @@ if __name__ == '__main__':
         send_file_server(client,TileSet,".", FILEPATH, JOBPath)
         send_file_server(client,TileSet,".", "list_hostsgpu", JOBPath)
         send_file_server(client,TileSet,"TiledCourse/webrtcconnect/", NOM_FICHIER_ETUDIANT_GENERE, JOBPath)
-        send_file_server(client,TileSet,".", "dockerRunHub.sh", JOBPath)
-        COMMAND='launch TS='+TileSet+" "+JOBPath+' chmod u+x ./dockerRunHub.sh'
-        client.send_server(COMMAND)
-        client.get_OK()
-        #send_file_server(client,TileSet,"TiledCourse/webrtcconnect/DockerHub", "dockerRunHub.sh", JOBPath)
+        # send_file_server(client,TileSet,".", "dockerRunHub.sh", JOBPath)
+        # COMMAND='launch TS='+TileSet+" "+JOBPath+' chmod u+x ./dockerRunHub.sh'
+        # client.send_server(COMMAND)
+        # client.get_OK()
+        send_file_server(client,TileSet,"TiledCourse/webrtcconnect/DockerHub", "dockerRunHub.sh", JOBPath)
+        send_file_server(client,TileSet,"TiledCourse/webrtcconnect/DockerHub", "dockerStop.sh", JOBPath)
         send_file_server(client,TileSet,"TiledCourse/webrtcconnect", "build_nodes_file", JOBPath)
         
         #send_file_server(client,TileSet,".", dockerCreateNetwork.sh, JOBPath)
