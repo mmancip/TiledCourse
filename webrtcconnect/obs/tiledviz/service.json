@@ -1,0 +1,7 @@
+{
+    "settings": {
+        "key": "classroom30",
+        "server": "rtmp://desktop:56000/live"
+    },
+    "type": "rtmp_custom"
+}

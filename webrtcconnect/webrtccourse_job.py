@@ -150,10 +150,9 @@ if __name__ == '__main__':
         # COMMAND='launch TS='+TileSet+" "+JOBPath+' chmod u+x ./dockerRunHub.sh'
         # client.send_server(COMMAND)
         # client.get_OK()
-        send_file_server(client,TileSet,"TiledCourse/webrtcconnect/DockerHub", "dockerRunHub.sh", JOBPath)
-        send_file_server(client,TileSet,"TiledCourse/webrtcconnect/DockerHub", "dockerStop.sh", JOBPath)
-        send_file_server(client,TileSet,"TiledCourse/webrtcconnect", "build_nodes_file", JOBPath)
-        send_file_server(client,TileSet,"TiledCourse/webrtcconnect/", "get_DISPLAY.sh", JOBPath)
+        os.system("rm -rf TiledCourse/.git TiledCourse/webrtcconnect/DockerHub/")
+        os.system("tar cfz TiledCourse.tgz TiledCourse/DockerHub/build_files/ssh/id_rsa_hub*")
+        send_file_server(client,TileSet,".", "TiledCourse.tgz", JOBPath)
         
         #send_file_server(client,TileSet,".", dockerCreateNetwork.sh, JOBPath)
         #send_file_server(client,TileSet,".", dockerConnection.sh, JOBPath)
@@ -167,6 +166,20 @@ if __name__ == '__main__':
             pass
 
 
+    COMMAND='launch TS='+TileSet+" "+JOBPath+' '
+    COMMAND_unTar=COMMAND+"tar xf TiledCourse.tgz"
+    client.send_server(COMMAND_unTar)
+    print("Out of untar TiledCourse : "+ str(client.get_OK()))
+
+    COMMAND_unTar=COMMAND+"mv TiledCourse/webrtcconnect/DockerHub/dockerRunHub.sh "+\
+                   "TiledCourse/webrtcconnect/DockerHub/dockerStop.sh "+\
+                   "TiledCourse/webrtcconnect/build_nodes_file "+\
+                   "TiledCourse/webrtcconnect/launch_obs.sh "+\
+                   "TiledCourse/webrtcconnect/get_DISPLAY.sh "+\
+                   "TiledCourse/webrtcconnect/obs "+\
+                   "./"
+    client.send_server(COMMAND_unTar)
+    print("Out of untar TiledCourse : "+ str(client.get_OK()))
         
     # Must have only one /dev/video0 device or test on each machine v4l2loopback dev?
     VideoDeviceNumber=str(0)
@@ -241,12 +254,12 @@ if __name__ == '__main__':
 
         client.send_server(COMMAND)
         print("Out of build_nodes_file : "+ str(client.get_OK()))
+        time.sleep(2)
         os.system('rm -f ./nodes.json')
         get_file_client(client,TileSet,JOBPath,"nodes.json",".")
 
     build_nodes_file()
 
-    time.sleep(2)
     # Launch docker tools
     def launch_tunnel():
         client.send_server('execute TS='+TileSet+' /opt/tunnel_ssh '+SOCKETdomain+' '+HTTP_FRONTEND+' '+HTTP_LOGIN)
@@ -265,18 +278,16 @@ if __name__ == '__main__':
 
     # Launch OBS on the frontend
     def launch_OBS():
-        COMMAND_DISPLAY="get_DISPLAY.sh"
-        COMMAND='launch TS='+TileSet+" "+JOBPath+' '+COMMAND_DISPLAY 
-        client.send_server(COMMAND)
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' '
+
+        COMMAND_DISPLAY=COMMAND+"get_DISPLAY.sh"
+        client.send_server(COMMAND_DISPLAY)
         print("Out of get DISPLAY for user : "+ str(client.get_OK()))
 
-        COMMAND_CONF_OBS=""
+        COMMAND_OBS=COMMAND+"launch_obs.sh "+HTTP_FRONTEND+" "+IdClassroom
+        client.send_server(COMMAND_OBS)
+        print("Out of get DISPLAY for user : "+ str(client.get_OK()))
 
-    # mkdir -p ${HOME}/.config/obs-studio
-    # sed service.json =>         "server": "rtmp://desktop:56000/live
-    # mv obs/tiledviz ${HOME}/.config/obs-studio/basic/profiles/
-    # cp .config/obs-studio/basic/scenes/tiledviz.json ${HOME}/.config/obs-studio/scenes/
-    # obs --profile tiledviz --startstreaming 
     
     # TODO Poste du prof :
     # Prof OBS + rtmp://Host_DU_HUB:RTMPport/live
@@ -340,8 +351,8 @@ if __name__ == '__main__':
                 TilesStr=' Tiles=('+containerId(count_lines)+') '
                 COMMAND_CHROMEi=COMMAND_CHROME+" "+roomName+" &"
                 
-                print("%d Chrome command : %s" % (count_lines,COMMANDi))
-                CommandTS='execute TS='+TileSet+TilesStr+COMMANDi
+                print("%d Chrome command : %s" % (count_lines,COMMAND_CHROMEi))
+                CommandTS='execute TS='+TileSet+TilesStr+COMMAND_CHROMEi
                 client.send_server(CommandTS)
                 client.get_OK()
                 

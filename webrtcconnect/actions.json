@@ -1,4 +1,6 @@
 {"action1":["build_nodes_file","input"],
  "action2":["launch_tunnel","launch"],
- "action3":["getteachervideo","airplay"],
- "action4":["kill_all_containers","delete_forever"]}
+ "action3":["launch_OBS","all_out"],
+ "action4":["getteachervideo","airplay"],
+ "action5":["launch_chrome","tab"],
+ "action6":["kill_all_containers","delete_forever"]}
