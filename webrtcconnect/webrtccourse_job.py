@@ -131,6 +131,8 @@ if __name__ == '__main__':
     os.system('cp '+FILEPATH+' TiledCourse/webrtcconnect')
     COMMAND_MAIL="cd TiledCourse/webrtcconnect;  ./fastGenerateMail.sh "+CONFIGPATH
     print("command_mail :"+COMMAND_MAIL)
+
+    #TODO randomize roomname => before sendmail
     os.system(COMMAND_MAIL)
 
     # Send CASE and SITE files
@@ -165,11 +167,11 @@ if __name__ == '__main__':
 
 
         
-    # ???? Comment 
+    # Must have only one /dev/video0 device or test on each machine v4l2loopback dev?
     VideoDeviceNumber=str(0)
     
     network="classroom"+IdClassroom
-    #"X"
+    # "X" for no swarm !
     domain="11.0.0"
 
     CLIENT=HTTP_FRONTEND+":"+HTTP_IP
@@ -178,7 +180,7 @@ if __name__ == '__main__':
         COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerRunHub.sh '+\
             NOM_FICHIER_ETUDIANT_GENERE+' '+\
             RTMPPORT+' '+SERVER_JITSI+' '+VideoDeviceNumber+' '+\
-            GPU_FILE+" "+network+" "+domain+" "+init_IP+" "+CLIENT
+            GPU_FILE+" "+network+" "+domain+" "+init_IP+" "+CLIENT+" "+DOCKER_NAME+" "+DATE
     
         print("\nCommand RunHub : "+COMMAND)
         client.send_server(COMMAND)
@@ -187,6 +189,14 @@ if __name__ == '__main__':
     Run_Hub()
 
     # IP from Hub : domain.INIT_IP-1
+
+    # Q : d'où le ssh Docker0 du Hub ???
+    
+    # depuis connection## dans HUB-CR## :
+    #id_rsa_${HTTP_IP} + .pub => HUB/.ssh
+    	#scp ${PKFileName} ${realhost}:$DIR
+	# ssh ${realhost} docker cp $DIR/${PKFileName} \
+	# 	HUB-CR${IdClassroom}:/home/myuser/.ssh/classroom${IdClassroom}.pub
     
     def Kill_Hub():
         COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerStop.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+GPU_FILE
@@ -252,34 +262,49 @@ if __name__ == '__main__':
         print("Out of xrandr : "+ str(client.get_OK()))
     launch_resize()
 
+    #=> à démarrer sur la frontale (avec quel DISPLAY ?? => site_config)
     # TODO Poste du prof :
     # Prof OBS + rtmp://Host_DU_HUB:RTMPport/live
+
+    #=> configurer le pulseaudio FRONTEND (EN TEMPORAIRE !) à écouter sur le port 4000
+    # PULSESERVER_PORT=4000
+    # # All pulseaudio in container listen to 4000
+    # echo 'default-server = tcp:localhost:4000' > /etc/pulse/client.conf
+    # ~/.config/pulse/client.conf
+    
+    # sur le Hub
+    # pulseaudio -d&
+    # => NATIVE=$( lsof -c pulseaudio  2>/dev/null |grep "/native" | tail -1 )
+    #ssh  -R 4000:$NATIVE login@frontalen
+    
 
     # Copy connection key to HTTP_FRONTEND to HUB => 
     # Add pulseaudio tunnel :
     # TODO reverse (native socket pulseaudio in Hub)
     #ssh  -R4000:/run/user/$(id -u)/pulse/native @${Host_DU_HUB}
     #p${PORT_SSH_HUB} => pas besoin de copie du ssh.pub
-
+    
+    
     # Pulse VM : 
     # "ssh -4 -fNT \
     # -L${PULSESERVER_PORT}:localhost:${PULSESERVER_PORT} \
     # myuser@HUB-CR${ID_CLASSROOM}"
+    # => IP du HUB ? OK INIT_IP-1
 
+    #=>  à inverser => authoriser le Hub vers les VM mais pas l'inverse!
+    # "ssh -4 -fNT \
+    # -L${PULSESERVER_PORT}:localhost:${NATIVE} \
+    # myuser@HUB-CR${ID_CLASSROOM}"
     
     # startClass :
     def getteachervideo():
-        COMMAND_ffmpeg="/opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" &"    
-        client.send_server('execute TS='+TileSet+' '+COMMAND_ffmpeg)
-        print("Out of ffmpeg : "+ str(client.get_OK()))
+        COMMAND_start="/startClass.sh"+" &"    
+        client.send_server('execute TS='+TileSet+' '+COMMAND_start)
+        print("Out of startClass : "+ str(client.get_OK()))
     #getteachervideo()
     
-    ## Need a sleep to wait the connection between ffmpeg & the streaming server
-    #time.sleep(5)
-
-    # Launch google-chrome
-    def launch_chrome():
-        COMMAND_CHROME="/opt/command_chrome "+' '+SERVER_JITSI+' '+TeacherFirstname+'_'+TeacherLastname
+    # Launch 
+    def launch_all(COMMAND):
 
         with open(FILEPATH) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=';')
@@ -289,23 +314,18 @@ if __name__ == '__main__':
                 print(", ".join(row))
                 count_lines=count_lines+1
 
-                roomName=row[2]
+                #UserName=row[0]
+                #mail=row[1]
+                #roomName=row[2]
 
-                TilesStr=' Tiles=('+containerId(count_lines)+') '     
-                COMMAND_CHROMEi=COMMAND_CHROME+" "+roomName+" &"
+                TilesStr=' Tiles=('+containerId(count_lines)+') '
             
-                print("%d VMD command : %s" % (count_lines,COMMAND_CHROMEi))
-                CommandTS='execute TS='+TileSet+TilesStr+COMMAND_CHROMEi
+                print("%d command : %s" % (count_lines,COMMAND))
+                CommandTS='execute TS='+TileSet+TilesStr+COMMAND
                 client.send_server(CommandTS)
                 client.get_OK()
                 
                 
-    #time.sleep(3)
-
-    # TODO Poste du prof :
-    #	./mute ${VM_NAME}
-    #	./audioOff ${VM_NAME}
-    
     def kill_all_containers():
         Kill_Hub()
         client.send_server('execute TS='+TileSet+' killall Xvnc')
@@ -313,12 +333,20 @@ if __name__ == '__main__':
         client.send_server('launch TS='+TileSet+" "+JOBPath+" "+COMMANDStop)
         client.close()
         
-    # # Launch Server for commands from FlaskDock
-    # print("GetActions=ClientAction("+str(connectionId)+",globals=dict(globals()),locals=dict(**locals()))")
-    # sys.stdout.flush()
+    # Launch Server for commands from FlaskDock
+    try:
+        print("GetActions=ClientAction("+str(connectionId)+",globals=dict(globals()),locals=dict(**locals()))")
+        sys.stdout.flush()
     
+        GetActions=ClientAction(connectionId,globals=dict(globals()),locals=dict(**locals()))
+        outHandler.flush()
+    except:
+        traceback.print_exc(file=sys.stdout)
+        code.interact(banner="Error ClientAction :",local=dict(globals(), **locals()))
+
     print("Actions \n",str(tiles_actions))
     sys.stdout.flush()
+
     try:
         code.interact(banner="Interactive console to use actions directly :",local=dict(globals(), **locals()))
     except SystemExit:

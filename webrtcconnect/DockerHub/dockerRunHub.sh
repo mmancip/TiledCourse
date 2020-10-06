@@ -1,7 +1,6 @@
 #!/bin/bash
 
 StudentFileName=$1
-#PKFileName=$2
 RTMPPort=$2
 JitsiServer=$3
 VideoDevice=$4
@@ -10,8 +9,10 @@ network=$6
 domain=$7
 init_IP=$8
 CLIENT=$9
+DOCKER_NAME=$10
+DATE=$11
 
-if [ "$#" -eq 9 ]
+if [ "$#" -eq 11 ]
 then
 
 	OLDIFS="$IFS"
@@ -38,13 +39,14 @@ then
 	SSHPort=$IdClassroom"222"
 	ssh ${realhost} docker create \
 	    -p 0.0.0.0:${SSHPort}:22 \
-	    -p 22 \
 	    -p 0.0.0.0:${RTMPPort}:1935 \
 	    -e ID_CLASSROOM="${IdClassroom}" \
 	    -e VIDEO_DEVICE="${VideoDevice}" \
 	    -e JITSI_SERVER="${JitsiServer}" \
 	    -e TEACHER_NAME="${TEACHER_NAME}" \
 	    -e TEACHER_EMAIL="${TEACHER_EMAIL}" \
+	    -e DOCKER_NAME="${DOCKER_NAME}" \
+	    -e DATE="${DATE}" \
 	    --add-host ${CLIENT} \
 	    --net ${network} \
 	    --ip=${domain}.$((init_IP-1)) \
@@ -60,10 +62,6 @@ then
 	ssh ${realhost} docker cp $DIR/${StudentFileName} \
 		HUB-CR${IdClassroom}:/home/myuser/students.list
 
-	# scp ${PKFileName} ${realhost}:$DIR
-	# ssh ${realhost} docker cp $DIR/${PKFileName} \
-	# 	HUB-CR${IdClassroom}:/home/myuser/.ssh/classroom${IdClassroom}.pub
-	
 	ssh ${realhost} rm -rf $DIR
 
 	ssh ${realhost} docker start HUB-CR${IdClassroom}
@@ -73,7 +71,6 @@ else
 	echo "Usage: "
 	echo " $0 StudentFileName PKFileName  RTMPPort JitsiServer VideoDevice HostFile"
 	echo " StudentFileName is the name of the generated list "
-	echo " PKFileName is the name of the publickey "
 	echo " JitsiServer is the address of your jitsi server [Format: your_jitsi_server_address.ext "
 	echo " VideoDevice is the number of the attributed video device in /dev/video "
 fi

@@ -5,7 +5,6 @@ ENV NGINX_RTMP_MODULE_VERSION 1.2.1
 
 ENV DEBIAN_FRONTEND noninteractive
 # TYPE is used for start.sh script
-ENV TYPE Docker0
 
 ENV DOCKER_PATH "."
 

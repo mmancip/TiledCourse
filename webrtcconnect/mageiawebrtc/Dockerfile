@@ -17,5 +17,4 @@ RUN urpmi.addmedia Google\ Chrome\ 64bit http://dl.google.com/linux/chrome/rpm/s
 
 RUN urpmi ffmpeg
 
-COPY command_chrome /opt
-COPY command_ffmpeg /opt
+COPY DockerHub/build_files/ssh/id_rsa_hub.pub /home/myuser/.ssh/authorized_keys
