@@ -4,5 +4,3 @@ VIDEO_DEVICE=$2
 
 ffmpeg -nostdin -nostats -hide_banner -loglevel warning -i rtmp://hub-cr${ID_CLASSROOM}/live/classroom${ID_CLASSROOM} -f v4l2 /dev/video${VIDEO_DEVICE} > /home/myuser/.vnc/out_ffmpeg 2>&1 < /dev/null &
 
-
-	

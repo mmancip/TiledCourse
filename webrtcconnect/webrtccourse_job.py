@@ -153,6 +153,7 @@ if __name__ == '__main__':
         send_file_server(client,TileSet,"TiledCourse/webrtcconnect/DockerHub", "dockerRunHub.sh", JOBPath)
         send_file_server(client,TileSet,"TiledCourse/webrtcconnect/DockerHub", "dockerStop.sh", JOBPath)
         send_file_server(client,TileSet,"TiledCourse/webrtcconnect", "build_nodes_file", JOBPath)
+        send_file_server(client,TileSet,"TiledCourse/webrtcconnect/", "get_DISPLAY.sh", JOBPath)
         
         #send_file_server(client,TileSet,".", dockerCreateNetwork.sh, JOBPath)
         #send_file_server(client,TileSet,".", dockerConnection.sh, JOBPath)
@@ -262,7 +263,21 @@ if __name__ == '__main__':
         print("Out of xrandr : "+ str(client.get_OK()))
     launch_resize()
 
-    #=> à démarrer sur la frontale (avec quel DISPLAY ?? => site_config)
+    # Launch OBS on the frontend
+    def launch_OBS():
+        COMMAND_DISPLAY="get_DISPLAY.sh"
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' '+COMMAND_DISPLAY 
+        client.send_server(COMMAND)
+        print("Out of get DISPLAY for user : "+ str(client.get_OK()))
+
+        COMMAND_CONF_OBS=""
+
+    # mkdir -p ${HOME}/.config/obs-studio
+    # sed service.json =>         "server": "rtmp://desktop:56000/live
+    # mv obs/tiledviz ${HOME}/.config/obs-studio/basic/profiles/
+    # cp .config/obs-studio/basic/scenes/tiledviz.json ${HOME}/.config/obs-studio/scenes/
+    # obs --profile tiledviz --startstreaming 
+    
     # TODO Poste du prof :
     # Prof OBS + rtmp://Host_DU_HUB:RTMPport/live
 
@@ -296,12 +311,46 @@ if __name__ == '__main__':
     # -L${PULSESERVER_PORT}:localhost:${NATIVE} \
     # myuser@HUB-CR${ID_CLASSROOM}"
     
-    # startClass :
+    # Teacher webcam through ffmpeg :
     def getteachervideo():
-        COMMAND_start="/startClass.sh"+" &"    
-        client.send_server('execute TS='+TileSet+' '+COMMAND_start)
-        print("Out of startClass : "+ str(client.get_OK()))
+        COMMAND_ffmpeg="/opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" &"
+        client.send_server('execute TS='+TileSet+' '+COMMAND_ffmpeg)
+        print("Out of ffmpeg : "+ str(client.get_OK()))
     #getteachervideo()
+    
+    ## Need a sleep to wait the connection between ffmpeg & the streaming server
+    #time.sleep(5)
+
+    # Launch google-chrome
+    def launch_chrome():
+        COMMAND_CHROME="/opt/command_chrome "+' '+SERVER_JITSI+' '+TeacherFirstname+'_'+TeacherLastname+' '+TeacherEmail
+
+        with open(FILEPATH) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=';')
+            count_lines=0
+            for row in csv_reader:
+
+                print(", ".join(row))
+                count_lines=count_lines+1
+
+                #UserName=row[0]
+                #mail=row[1]
+                roomName=row[2]
+
+                TilesStr=' Tiles=('+containerId(count_lines)+') '
+                COMMAND_CHROMEi=COMMAND_CHROME+" "+roomName+" &"
+                
+                print("%d Chrome command : %s" % (count_lines,COMMANDi))
+                CommandTS='execute TS='+TileSet+TilesStr+COMMANDi
+                client.send_server(CommandTS)
+                client.get_OK()
+                
+    #time.sleep(3)
+    
+    # TODO Poste du prof :
+    #./mute ${VM_NAME}
+    #./audioOff ${VM_NAME}
+    
     
     # Launch 
     def launch_all(COMMAND):

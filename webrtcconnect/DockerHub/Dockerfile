@@ -82,10 +82,11 @@ ENV VIDEO_DEVICE -1
 ENV TEACHER_NAME -1
 ENV TEACHER_EMAIL -1
 
-# Script
-COPY $DOCKER_PATH/script/startClass.sh /home/myuser/startClass
-RUN chown -R myuser:myuser /home/myuser/startClass
 
+COPY $DOCKER_PATH/build_files/ssh/id_rsa_hub.pub /home/myuser/.ssh/authorized_keys
+COPY $DOCKER_PATH/build_files/ssh/id_rsa_hub*  /home/myuser/.ssh/
+
+# Script
 COPY $DOCKER_PATH/script/muteAll.sh /home/myuser/mute
 RUN chown -R myuser:myuser /home/myuser/mute
 
