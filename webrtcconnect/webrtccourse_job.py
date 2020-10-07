@@ -150,8 +150,9 @@ if __name__ == '__main__':
         # COMMAND='launch TS='+TileSet+" "+JOBPath+' chmod u+x ./dockerRunHub.sh'
         # client.send_server(COMMAND)
         # client.get_OK()
-        os.system("rm -rf TiledCourse/.git TiledCourse/webrtcconnect/DockerHub/")
-        os.system("tar cfz TiledCourse.tgz TiledCourse/DockerHub/build_files/ssh/id_rsa_hub*")
+        os.system("rm -rf TiledCourse/.git TiledCourse/DockerHub/build_files/ssh/id_rsa_hub*")
+
+        os.system("tar cfz TiledCourse.tgz TiledCourse")
         send_file_server(client,TileSet,".", "TiledCourse.tgz", JOBPath)
         
         #send_file_server(client,TileSet,".", dockerCreateNetwork.sh, JOBPath)
@@ -167,7 +168,7 @@ if __name__ == '__main__':
 
 
     COMMAND='launch TS='+TileSet+" "+JOBPath+' '
-    COMMAND_unTar=COMMAND+"tar xf TiledCourse.tgz"
+    COMMAND_unTar=COMMAND+"tar xfz TiledCourse.tgz"
     client.send_server(COMMAND_unTar)
     print("Out of untar TiledCourse : "+ str(client.get_OK()))
 
@@ -280,11 +281,11 @@ if __name__ == '__main__':
     def launch_OBS():
         COMMAND='launch TS='+TileSet+" "+JOBPath+' '
 
-        COMMAND_DISPLAY=COMMAND+"get_DISPLAY.sh"
+        COMMAND_DISPLAY=COMMAND+"./get_DISPLAY.sh"
         client.send_server(COMMAND_DISPLAY)
         print("Out of get DISPLAY for user : "+ str(client.get_OK()))
 
-        COMMAND_OBS=COMMAND+"launch_obs.sh "+HTTP_FRONTEND+" "+IdClassroom
+        COMMAND_OBS=COMMAND+"./launch_obs.sh "+HTTP_FRONTEND+" "+IdClassroom
         client.send_server(COMMAND_OBS)
         print("Out of get DISPLAY for user : "+ str(client.get_OK()))
 
