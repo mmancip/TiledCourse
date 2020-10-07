@@ -9,10 +9,11 @@ network=$6
 domain=$7
 init_IP=$8
 CLIENT=$9
-DOCKER_NAME=$10
-DATE=$11
+shift 9
+DOCKER_NAME=$1
+DATE=$2
 
-if [ "$#" -eq 11 ]
+if [ "$#" -eq 2 ]
 then
 
 	OLDIFS="$IFS"
