@@ -312,49 +312,13 @@ if __name__ == '__main__':
         client.send_server(COMMAND_OBS)
         print("Out of get DISPLAY for user : "+ str(client.get_OK()))
 
+        time.sleep(3)
     
-    # TODO Poste du prof :
-    # Prof OBS + rtmp://Host_DU_HUB:RTMPport/live
-
-    #=> configurer le pulseaudio FRONTEND (EN TEMPORAIRE !) à écouter sur le port 4000
-    # PULSESERVER_PORT=4000
-    # # All pulseaudio in container listen to 4000
-    # echo 'default-server = tcp:localhost:4000' > /etc/pulse/client.conf
-    # ~/.config/pulse/client.conf
-    
-    # sur le Hub
-    # pulseaudio -d&
-    # => NATIVE=$( lsof -c pulseaudio  2>/dev/null |grep "/native" | tail -1 )
-    #ssh  -R 4000:$NATIVE login@frontalen
-    
-
-    # Copy connection key to HTTP_FRONTEND to HUB => 
-    # Add pulseaudio tunnel :
-    # TODO reverse (native socket pulseaudio in Hub)
-    #ssh  -R4000:/run/user/$(id -u)/pulse/native @${Host_DU_HUB}
-    #p${PORT_SSH_HUB} => pas besoin de copie du ssh.pub
-    
-    
-    # Pulse VM : 
-    # "ssh -4 -fNT \
-    # -L${PULSESERVER_PORT}:localhost:${PULSESERVER_PORT} \
-    # myuser@HUB-CR${ID_CLASSROOM}"
-    # => IP du HUB ? OK INIT_IP-1
-
-    #=>  à inverser => authoriser le Hub vers les VM mais pas l'inverse!
-    # "ssh -4 -fNT \
-    # -L${PULSESERVER_PORT}:localhost:${NATIVE} \
-    # myuser@HUB-CR${ID_CLASSROOM}"
-    
-    # Teacher webcam through ffmpeg :
-    def getteachervideo():
-        COMMAND_ffmpeg="/opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" &"
+        COMMAND_ffmpeg="/opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" "+IP_Hub+" &"
         client.send_server('execute TS='+TileSet+' '+COMMAND_ffmpeg)
         print("Out of ffmpeg : "+ str(client.get_OK()))
     #getteachervideo()
     
-    ## Need a sleep to wait the connection between ffmpeg & the streaming server
-    #time.sleep(5)
 
     # Launch google-chrome
     def launch_chrome():
@@ -387,26 +351,26 @@ if __name__ == '__main__':
     
     
     # Launch 
-    def launch_all(COMMAND):
+    # def launch_all(COMMAND):
 
-        with open(FILEPATH) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=';')
-            count_lines=0
-            for row in csv_reader:
+    #     with open(FILEPATH) as csv_file:
+    #         csv_reader = csv.reader(csv_file, delimiter=';')
+    #         count_lines=0
+    #         for row in csv_reader:
 
-                print(", ".join(row))
-                count_lines=count_lines+1
+    #             print(", ".join(row))
+    #             count_lines=count_lines+1
 
-                #UserName=row[0]
-                #mail=row[1]
-                #roomName=row[2]
+    #             #UserName=row[0]
+    #             #mail=row[1]
+    #             #roomName=row[2]
 
-                TilesStr=' Tiles=('+containerId(count_lines)+') '
+    #             TilesStr=' Tiles=('+containerId(count_lines)+') '
             
-                print("%d command : %s" % (count_lines,COMMAND))
-                CommandTS='execute TS='+TileSet+TilesStr+COMMAND
-                client.send_server(CommandTS)
-                client.get_OK()
+    #             print("%d command : %s" % (count_lines,COMMAND))
+    #             CommandTS='execute TS='+TileSet+TilesStr+COMMAND
+    #             client.send_server(CommandTS)
+    #             client.get_OK()
                 
                 
     def kill_all_containers():
