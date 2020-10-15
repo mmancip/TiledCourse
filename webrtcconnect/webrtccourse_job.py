@@ -379,10 +379,9 @@ if __name__ == '__main__':
                 CommandTS='execute TS='+TileSet+TilesStr+COMMAND_CHROMEi
                 client.send_server(CommandTS)
                 client.get_OK()
+        time.sleep(3)
                 
-    #time.sleep(3)
-    
-    # TODO Poste du prof :
+    #TODO
     #./mute ${VM_NAME}
     #./audioOff ${VM_NAME}
     
@@ -419,6 +418,7 @@ if __name__ == '__main__':
         
     # Launch Server for commands from FlaskDock
     try:
+        time.sleep(2)
         print("GetActions=ClientAction("+str(connectionId)+",globals=dict(globals()),locals=dict(**locals()))")
         sys.stdout.flush()
     
