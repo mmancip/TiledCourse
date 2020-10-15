@@ -137,6 +137,9 @@ if __name__ == '__main__':
 
     # Send CASE and SITE files
     try:
+        client.send_server('launch TS='+TileSet+" "+JOBPath+' chmod og-rxw '+JOBPath)
+        print("Out of chmod JOBPath : "+ str(client.get_OK()))
+        
         send_file_server(client,TileSet,".", CASE_config, JOBPath)
         CASE_config=os.path.join(JOBPath,os.path.basename(CASE_config))
         send_file_server(client,TileSet,".", SITE_config, JOBPath)
