@@ -149,18 +149,6 @@ if __name__ == '__main__':
         send_file_server(client,TileSet,".", FILEPATH, JOBPath)
         send_file_server(client,TileSet,".", "list_hostsgpu", JOBPath)
         send_file_server(client,TileSet,"TiledCourse/webrtcconnect/", NOM_FICHIER_ETUDIANT_GENERE, JOBPath)
-        # send_file_server(client,TileSet,".", "dockerRunHub.sh", JOBPath)
-        # COMMAND='launch TS='+TileSet+" "+JOBPath+' chmod u+x ./dockerRunHub.sh'
-        # client.send_server(COMMAND)
-        # client.get_OK()
-        os.system("rm -rf TiledCourse/.git TiledCourse/DockerHub/build_files/ssh/id_rsa_hub*")
-
-        os.system("tar cfz TiledCourse.tgz TiledCourse")
-        send_file_server(client,TileSet,".", "TiledCourse.tgz", JOBPath)
-        
-        #send_file_server(client,TileSet,".", dockerCreateNetwork.sh, JOBPath)
-        #send_file_server(client,TileSet,".", dockerConnection.sh, JOBPath)
-
     except:
         print("Error sending files !")
         traceback.print_exc(file=sys.stdout)
@@ -171,19 +159,19 @@ if __name__ == '__main__':
 
 
     COMMAND='launch TS='+TileSet+" "+JOBPath+' '
-    COMMAND_unTar=COMMAND+"tar xfz TiledCourse.tgz"
-    client.send_server(COMMAND_unTar)
-    print("Out of untar TiledCourse : "+ str(client.get_OK()))
+    COMMAND_TiledCourse=COMMAND+COMMAND_GIT
+    client.send_server(COMMAND_TiledCourse)
+    print("Out of git clone TiledCourse : "+ str(client.get_OK()))
 
-    COMMAND_unTar=COMMAND+"mv TiledCourse/webrtcconnect/DockerHub/dockerRunHub.sh "+\
+    COMMAND_copy=COMMAND+"cp -r TiledCourse/webrtcconnect/DockerHub/dockerRunHub.sh "+\
                    "TiledCourse/webrtcconnect/DockerHub/dockerStop.sh "+\
                    "TiledCourse/webrtcconnect/build_nodes_file "+\
                    "TiledCourse/webrtcconnect/launch_obs.sh "+\
                    "TiledCourse/webrtcconnect/get_DISPLAY.sh "+\
                    "TiledCourse/webrtcconnect/obs "+\
                    "./"
-    client.send_server(COMMAND_unTar)
-    print("Out of untar TiledCourse : "+ str(client.get_OK()))
+    client.send_server(COMMAND_copy)
+    print("Out of copy scripts from TiledCourse : "+ str(client.get_OK()))
         
     # Must have only one /dev/video0 device or test on each machine v4l2loopback dev?
     VideoDeviceNumber=str(0)
