@@ -180,7 +180,11 @@ if __name__ == '__main__':
     # "X" for no swarm !
     domain="11.0.0"
 
+    # Client for teacher must be the Frontend (in site_config.ini) from TVConnection (detect Frontend IP ?)
     CLIENT=HTTP_FRONTEND+":"+HTTP_IP
+    HUBName='HUB-CR'+IdClassroom 
+
+    ID="id_rsa_"+HTTP_IP        
     
     def Run_Hub():
         COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerRunHub.sh '+\
@@ -190,19 +194,47 @@ if __name__ == '__main__':
     
         print("\nCommand RunHub : "+COMMAND)
         client.send_server(COMMAND)
-
         print("Out of launch Hub : "+ str(client.get_OK()))
+
+        # Copy ssh key to frontend from connection to HUB :
+
+        send_file_server(client,TileSet,".ssh", ID, JOBPath)
+        send_file_server(client,TileSet,".ssh", ID+".pub", JOBPath)
+
+        global HUB_Host
+        with open("list_hostsgpu","r") as hostfile :
+            HUB_Host=hostfile.readline().split(" ")[0]
+
+        global DOCKER_HUB
+        DOCKER_HUB='ssh '+HUB_Host+' docker'
+        
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' scp '+ID+'* '+HUB_Host+":/tmp"
+        client.send_server(COMMAND)
+        print("Out of send key : "+ str(client.get_OK()))
+
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' '+DOCKER_HUB+' cp /tmp/'+ID+' '+HUBName+':/home/myuser/.ssh/'
+        client.send_server(COMMAND)
+        print("Out of put key on Hub : "+ str(client.get_OK()))
+        
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' '+DOCKER_HUB+' cp /tmp/'+ID+'.pub '+HUBName+':/home/myuser/.ssh/'
+        client.send_server(COMMAND)
+        print("Out of put pub key on Hub : "+ str(client.get_OK()))
+
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' bash -c " rm -f '+ID+'* ; ssh '+HUB_Host+" rm -f /tmp/"+ID+'* "'
+        client.send_server(COMMAND)
+        print("Out of rm key : "+ str(client.get_OK()))
+
+
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' '+DOCKER_HUB+\
+            ' exec '+HUBName+' bash -c \'"chown myuser:myuser /home/myuser/.ssh/'+ID+'* ;'+\
+            ' chmod 600 /home/myuser/.ssh/'+ID+'* "\''
+        client.send_server(COMMAND)
+        print("Out of chmod key on Hub : "+ str(client.get_OK()))
+
     Run_Hub()
 
-    # IP from Hub : domain.INIT_IP-1
-
-    # Q : d'où le ssh Docker0 du Hub ???
+    IP_Hub=domain+"."+str(int(init_IP)-1)
     
-    # depuis connection## dans HUB-CR## :
-    #id_rsa_${HTTP_IP} + .pub => HUB/.ssh
-    	#scp ${PKFileName} ${realhost}:$DIR
-	# ssh ${realhost} docker cp $DIR/${PKFileName} \
-	# 	HUB-CR${IdClassroom}:/home/myuser/.ssh/classroom${IdClassroom}.pub
     
     def Kill_Hub():
         COMMAND='launch TS='+TileSet+" "+JOBPath+' ./dockerStop.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+GPU_FILE
