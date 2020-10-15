@@ -21,3 +21,4 @@ COPY mageiawebrtc/command_chrome /opt
 COPY mageiawebrtc/command_ffmpeg /opt
 COPY DockerHub/build_files/ssh/id_rsa_hub.pub /home/myuser/.ssh/authorized_keys
 COPY DockerHub/build_files/ssh/id_rsa_hub* /home/myuser/.ssh/
+COPY launch_sound.sh /opt

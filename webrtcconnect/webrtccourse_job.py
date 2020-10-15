@@ -300,6 +300,32 @@ if __name__ == '__main__':
         print("Out of xrandr : "+ str(client.get_OK()))
     launch_resize()
 
+    
+    def launch_sound():
+
+        # Get pulseaudio socket on frontend :
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' lsof -c pulseaudio  2>/dev/null |grep "/native" '+\
+            '| tail -1 | sed -e "s&.* \([a-zA-Z0-9_/]*/native\) .*&\\1&" |tee -a out_native'
+        client.send_server(COMMAND)
+        print("Out of socket native detection : "+ str(client.get_OK()))
+
+        # Add pulseaudio tunnel on Hub to frontend:
+        COMMAND='launch TS='+TileSet+" "+JOBPath+\
+            ' bash -c "cat out_native |xargs -I { '+DOCKER_HUB+' exec -u myuser '+HUBName+' /launch_sound.sh { "'+HTTP_IP+' '+HTTP_LOGIN 
+        client.send_server(COMMAND)
+        print("Out of launch_sound HUB : "+ str(client.get_OK()))
+
+        # Pulse VM :
+        COMMAND_Pulse="ssh -4 -fNT -i .ssh/id_rsa_hub -L4000:localhost:4000 "+IP_Hub+" &"
+        CommandTS='execute TS='+TileSet+" "+COMMAND_Pulse
+        client.send_server(CommandTS)
+        print("Out of ssh Hub : "+ str(client.get_OK()))
+
+        # All pulseaudio in container listen to 4000
+        client.send_server('execute TS='+TileSet+' /opt/launch_sound.sh')
+        print("Out of launch_sound VM : "+ str(client.get_OK()))
+    
+
     # Launch OBS on the frontend
     def launch_OBS():
         COMMAND='launch TS='+TileSet+" "+JOBPath+' '
@@ -375,6 +401,13 @@ if __name__ == '__main__':
                 
     def kill_all_containers():
         Kill_Hub()
+
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' killall obs'
+        client.send_server(COMMAND)
+
+        COMMAND='launch TS='+TileSet+" "+JOBPath+' exit_sound.sh'
+        client.send_server(COMMAND)
+        
         client.send_server('execute TS='+TileSet+' killall Xvnc')
         print("Out of killall command : "+ str(client.get_OK()))
         client.send_server('launch TS='+TileSet+" "+JOBPath+" "+COMMANDStop)

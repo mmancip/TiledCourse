@@ -116,6 +116,7 @@ RUN chown -R myuser:myuser /deleteModules
 
 # Start
 COPY $DOCKER_PATH/build_files/start.sh /start.sh
+COPY $DOCKER_PATH/build_files/launch_sound.sh /launch_sound.sh
 
 ENTRYPOINT ["/start.sh"]
 
