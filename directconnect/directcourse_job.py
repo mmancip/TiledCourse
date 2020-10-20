@@ -12,15 +12,8 @@ sys.path.append(os.path.realpath('/TiledViz/TVConnections/'))
 from connect import sock
 
 import json
-# HPC Machine working directory
-#In TVConnection :
-# DATE=re.sub(r'\..*','',datetime.datetime.isoformat(datetime.datetime.now(),sep='_').replace(":","-"))
-# TiledVizPath='/login/.tiledviz'
-# JOBPath='/login/.tiledviz/TEST_'+DATE
+import csv
 
-# CASE_NAME in case_config:
-#CASE="UREE"
-#In TVConnection : TileSet="TEST"
 SITE_config='./site_config.ini'
 CASE_config="./case_config.ini"
 
@@ -60,10 +53,9 @@ if __name__ == '__main__':
         return lines
 
     NUM_STUDENTS=countlines(FILEPATH)
-    print("Number of students :")
+    print("Number of students :"+str(NUM_STUDENTS))
     
     CreateTS='create TS='+TileSet+' Nb='+str(NUM_STUDENTS)
-
     client.send_server(CreateTS)
 
     # get TiledCourse package from Github
@@ -96,28 +88,23 @@ if __name__ == '__main__':
 
         client.send_server(COMMAND)
         print("Out of build_nodes_file : "+ str(client.get_OK()))
-        os.system('rm -f ./nodes.json')
+        time.sleep(2)
         get_file_client(client,TileSet,JOBPath,"nodes.json",".")
+        #os.system('rm -f ./nodes.json')
 
     build_nodes_file()
 
-    # # Launch Server for commands from FlaskDock
-    # print("GetActions=ClientAction("+str(connectionId)+",globals=dict(globals()),locals=dict(**locals()))")
-    # sys.stdout.flush()
+    def kill_all_containers():
+        # client.send_server('execute TS='+TileSet+' killall Xvnc')
+        # print("Out of killall command : "+ str(client.get_OK()))
+        # client.send_server('launch TS='+TileSet+" "+JOBPath+" "+COMMANDStop)
+        # client.close()
+        print("Find a command to kill vnc fluxes.")
+        
 
-    # try:
-    #     GetActions=ClientAction(connectionId,globals=dict(globals()),locals=dict(**locals()))
-    #     outHandler.flush()
-    # except:
-    #     traceback.print_exc(file=sys.stdout)
-    #     code.interact(banner="Error ClientAction :",local=dict(globals(), **locals()))
-
-    print("Actions \n",str(tiles_actions))
-    sys.stdout.flush()
-    try:
-        code.interact(banner="Interactive console to use actions directly :",local=dict(globals(), **locals()))
-    except SystemExit:
-        pass
+    launch_actions_and_interact()
+            
+    kill_all_containers()
 
     sys.exit(0)
 
