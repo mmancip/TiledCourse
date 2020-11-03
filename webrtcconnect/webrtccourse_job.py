@@ -17,8 +17,6 @@ import csv
 SITE_config='./site_config.ini'
 CASE_config="./case_config.ini"
 
-# repoDockerWebRTC="https://github.com/mmancip/"
-DockerWebRTC="DockerWebRTC"
 
 
 if __name__ == '__main__':
@@ -79,9 +77,13 @@ if __name__ == '__main__':
             return config['CASE'][varname]
         else:
             return x
+
     OPTIONS=OPTIONS.replace("JOBPath",JOBPath)
     OPTIONS=OPTIONS.replace('{','|{').replace('}','}|').split('|')
     OPTIONS="".join(list(map( replaceconf,OPTIONS)))
+
+#TODO : classroom.config must be an output from case_config.ini!
+#    	cf SERVER_JITSI var
 
     # reader csv sur le configpath
     dataclass=[]
@@ -123,7 +125,6 @@ if __name__ == '__main__':
     # IdClassroom < 65 ! car num port < 65535
     RTMPPORT=SOCKETdomain+"000"
 
-    #os.system("cp "+FILECLASS+" "+DockerWebRTC+"/original_list") => cf remarque README.md
 
     # get TiledCourse package from Github
     COMMAND_GIT="git clone https://github.com/mmancip/TiledCourse.git"
@@ -293,16 +294,19 @@ if __name__ == '__main__':
     def launch_resize(RESOL="1440x900"):
         client.send_server('execute TS='+TileSet+' xrandr --fb '+RESOL)
         print("Out of xrandr : "+ str(client.get_OK()))
+
     launch_resize()
 
     def launch_tunnel():
         client.send_server('execute TS='+TileSet+' /opt/tunnel_ssh '+SOCKETdomain+' '+HTTP_FRONTEND+' '+HTTP_LOGIN)
         print("Out of tunnel_ssh : "+ str(client.get_OK()))
+
     launch_tunnel()
 
     def launch_vnc():
         client.send_server('execute TS='+TileSet+' /opt/vnccommand')
         print("Out of vnccommand : "+ str(client.get_OK()))
+
     launch_vnc()
 
     
