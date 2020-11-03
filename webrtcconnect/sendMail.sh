@@ -40,7 +40,7 @@ then
 			s/\${SCHOOL_NAME}/${SchoolName//'/'/"\/"}/g")
 		
 
-		COMMAND='echo -e "${MESSAGE}" | iconv --from-code=UTF-8 --to-code=ISO-8859-1 | sendmail -F "${SenderName}" -f ${SenderEmail} -t ${StudentEmail}'
+		COMMAND='echo -e "${MESSAGE}" | iconv --from-code=UTF-8 --to-code=ISO-8859-1 | /sbin/sendmail -F "${SenderName}" -f ${SenderEmail} -t ${StudentEmail}'
 		
 		eval ${COMMAND}
 
