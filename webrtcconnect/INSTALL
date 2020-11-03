@@ -1,0 +1,49 @@
+
+You will need OBS and lsof on the frontend.
+And docker > 18.03 on the frontend and cluster for webRTC containers.
+
+If you use Windows for the teacher :
+     You will need a linux VM with your camera and sound devices exported inside
+     => You will have to use this VM as the Frontend in case_config.ini file.
+
+in TiledViz : (see TiledViz doc for ssh keys on the frontend) 
+docker build -t mageianvidia:7 -f TVConnections/mageianvidia/Dockerfile7 .
+
+in DockerHub :
+> cd DockerHub
+> ssh-keygen -b 1024 -t rsa -N '' -f build_files/ssh/id_rsa_hub
+> docker build -t hub_dev_classroom:1.1 .
+
+in webrtcconnect : (this docker will use mageianvidia:7 base image.
+> cd ..
+> docker build -t mageiachrome -f mageiawebrtc/Dockerfile .
+
+
+* v4l2loopback *
+You must install /dev/video0 loopback device for video on all docker hosts.
+v4l2loopback is a linux kernel module. See Appendix A for installation instructions.
+
+Then run this command to build virtual video device /dev/video0 to send
+teacher USB cam to all students (run as root) :
+> NUMERO_DEVICE=0
+> sudo modprobe v4l2loopback devices=1 video_nr=${NUMERO_DEVICE} card_label="TEACHER_CAM" exclusive_caps=1
+> chmod a+rw /dev/video${NUMERO_DEVICE}
+For now NUMERO_DEVICE must be 0 (and no usb webcam must be installed on the host before this command is running).
+This command is not persistent.
+
+TODO : build a systemd service.
+
+
+
+Appendix:
+
+A. Installation of v4l2loopback (version 0.12.5 from Github) kernel module :
+export version=0.12.5
+cd /usr/src
+curl -L https://github.com/umlaeute/v4l2loopback/archive/v${version}.tar.gz | tar xvz
+cd v4l2loopback-0.12.5
+dkms add -m
+v4l2loopback -v ${version}
+dkms build -m v4l2loopback -v ${version}
+dkms install -m
+v4l2loopback -v ${version}
