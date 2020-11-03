@@ -5,3 +5,6 @@ IP_Hub=$3
 
 ffmpeg -nostdin -nostats -hide_banner -loglevel warning -i rtmp://${IP_Hub}/live/classroom${ID_CLASSROOM} -f v4l2 /dev/video${VIDEO_DEVICE} > /home/myuser/.vnc/out_ffmpeg 2>&1 < /dev/null &
 
+sleep 2
+
+pgrep -fa ffmpeg && exit 0
