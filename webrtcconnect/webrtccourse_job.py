@@ -340,16 +340,19 @@ def launch_OBS():
     COMMAND_DISPLAY=COMMAND+"./get_DISPLAY.sh"
     client.send_server(COMMAND_DISPLAY)
     print("Out of get DISPLAY for user : "+ str(client.get_OK()))
+    sys.stdout.flush()
 
-    COMMAND_OBS=COMMAND+"./launch_obs.sh "+HTTP_FRONTEND+" "+RTMPPORT+" "+IdClassroom+" |tee -a ~/.vnc/out_obs &"
+    COMMAND_OBS=COMMAND+"./launch_obs.sh "+HTTP_FRONTEND+" "+RTMPPORT+" "+IdClassroom+" &"
     client.send_server(COMMAND_OBS)
     print("Out of execute OBS for user : "+ str(client.get_OK()))
+    sys.stdout.flush()
 
     time.sleep(3)
     
     COMMAND_ffmpeg="/opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" "+IP_Hub+" &"
     client.send_server('execute TS='+TileSet+' '+COMMAND_ffmpeg)
     print("Out of ffmpeg : "+ str(client.get_OK()))
+    sys.stdout.flush()
 
 #getteachervideo()
 
