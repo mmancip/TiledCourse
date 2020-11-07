@@ -10,8 +10,10 @@ domain=$7
 init_IP=$8
 CLIENT=$9
 shift 9
-DOCKER_NAME=$1
-DATE=$2
+TileSetPort=$1
+FRONTEND=$2
+DOCKER_NAME=$3
+DATE=$4
 
 if [ "$#" -eq 2 ]
 then
@@ -37,7 +39,12 @@ then
 	realhost=${Hostline% *}
 	thispath=$(dirname ${BASH_SOURCE[0]})
 
+	myuid=$(ssh ${realhost} id -u)
+	mygid=$(ssh ${realhost} id -g)
+	DOCKEROPTIONS="-p ${TileSetPort} -h ${FRONTEND} "
+	DOCKERARGS='-r 1920x1080 -u '${myuid}' -g '${mygid}' '${DOCKEROPTIONS} 
 	SSHPort=$IdClassroom"222"
+
 	ssh ${realhost} docker create \
 	    -p 0.0.0.0:${SSHPort}:22 \
 	    -p 0.0.0.0:${RTMPPort}:1935 \
@@ -53,7 +60,7 @@ then
 	    --ip=${domain}.$((init_IP-1)) \
 	    --hostname HUB-CR${IdClassroom} \
 	    --name HUB-CR${IdClassroom} \
-	    --rm hub_dev_classroom:1.1
+	    --rm hub_dev_classroom:1.1 ${DOCKERARGS}
 
 	DIR=/tmp/Hub_$(date +%F_%H-%M-%S)
 
