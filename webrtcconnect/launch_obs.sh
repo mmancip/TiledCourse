@@ -14,6 +14,6 @@ sed -e 's&"server":.*&"server": "rtmp://'${HTTP_FRONTEND}':'${RTMPPort}'/live"&'
 cp -rp obs/tiledviz ${HOME}/.config/obs-studio/basic/profiles/
 cp obs/scenes/tiledviz.json ${HOME}/.config/obs-studio/basic/scenes/
 
-nohup obs --profile tiledviz --startstreaming &
+nohup obs --profile tiledviz --startstreaming </dev/null &> /dev/null &
 
 exit 0
