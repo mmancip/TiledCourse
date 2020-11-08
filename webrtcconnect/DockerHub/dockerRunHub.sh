@@ -15,7 +15,7 @@ FRONTEND=$2
 DOCKER_NAME=$3
 DATE=$4
 
-if [ "$#" -eq 2 ]
+if [ "$#" -eq 4 ]
 then
 
 	OLDIFS="$IFS"
