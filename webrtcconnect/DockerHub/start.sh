@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 RESOL=3840x2160
 
