@@ -55,6 +55,7 @@ then
 	    -e TEACHER_EMAIL="${TEACHER_EMAIL}" \
 	    -e DOCKER_NAME="${DOCKER_NAME}" \
 	    -e DATE="${DATE}" \
+	    -e DOCKERID="001" \
 	    --add-host ${CLIENT} \
 	    --net ${network} \
 	    --ip=${domain}.$((init_IP-1)) \
