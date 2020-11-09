@@ -41,10 +41,11 @@ then
 
 	myuid=$(ssh ${realhost} id -u)
 	mygid=$(ssh ${realhost} id -g)
-	DOCKEROPTIONS="-p ${TileSetPort} -h ${FRONTEND} "
+	DOCKEROPTIONS="-p ${TileSetPort} -h $USER@${FRONTEND} "
 	DOCKERARGS='-r 1920x1080 -u '${myuid}' -g '${mygid}' '${DOCKEROPTIONS} 
 	SSHPort=$IdClassroom"222"
 
+	ssh ${realhost} bash -c "mkdir /tmp/hub-${DATE} && chmod 700 /tmp/hub-${DATE}"
 	ssh ${realhost} docker create \
 	    -p 0.0.0.0:${SSHPort}:22 \
 	    -p 0.0.0.0:${RTMPPort}:1935 \
@@ -56,6 +57,7 @@ then
 	    -e DOCKER_NAME="${DOCKER_NAME}" \
 	    -e DATE="${DATE}" \
 	    -e DOCKERID="001" \
+	    -v /tmp/hub-${DATE}:/home/myuser/.vnc/ \
 	    --add-host ${CLIENT} \
 	    --net ${network} \
 	    --ip=${domain}.$((init_IP-1)) \
