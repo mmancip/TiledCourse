@@ -106,3 +106,5 @@ COPY $DOCKER_PATH/build_files/launch_sound.sh /opt/launch_sound.sh
 EXPOSE 22
 EXPOSE 1935
 
+
+CMD ["-r","800x600","-u","1000","-g","1000","-p","55555","-h","localhost"]
