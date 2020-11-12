@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM tileubuntu
 
 ENV NGINX_VERSION nginx-1.18.0
 ENV NGINX_RTMP_MODULE_VERSION 1.2.1
@@ -69,11 +69,11 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
 
 
 # Configure user myuser
-RUN adduser --disabled-password --gecos "My User" --uid 1000 myuser
+RUN mkdir -p /home/myuser
+#RUN adduser --disabled-password --gecos "My User" --uid 1000 myuser
 
 COPY $DOCKER_PATH/build_files/ssh /home/myuser/.ssh
-RUN chown -R myuser:myuser /home/myuser/.ssh
-
+#RUN chown -R myuser:myuser /home/myuser/.ssh
 
 
 ENV ID_CLASSROOM -1
@@ -88,37 +88,23 @@ COPY $DOCKER_PATH/build_files/ssh/id_rsa_hub*  /home/myuser/.ssh/
 
 # Script
 COPY $DOCKER_PATH/script/muteAll.sh /home/myuser/mute
-RUN chown -R myuser:myuser /home/myuser/mute
-
 COPY $DOCKER_PATH/script/unmuteAll.sh /home/myuser/unmute
-RUN chown -R myuser:myuser /home/myuser/unmute
-
 COPY $DOCKER_PATH/script/audioOffAll.sh /home/myuser/audioOff
-RUN chown -R myuser:myuser /home/myuser/audioOff
-
 COPY $DOCKER_PATH/script/audioOnAll.sh /home/myuser/audioOn
-RUN chown -R myuser:myuser /home/myuser/audioOn
-
 COPY $DOCKER_PATH/script/searchSinkId.sh /searchSinkId
-RUN chown -R myuser:myuser /searchSinkId
-
 COPY $DOCKER_PATH/script/searchSourceId.sh /searchSourceId
-RUN chown -R myuser:myuser /searchSourceId
-
 COPY $DOCKER_PATH/script/moveSinkInput.sh /moveSinkInput
-RUN chown -R myuser:myuser /moveSinkInput
-
 COPY $DOCKER_PATH/script/moveSourceOutput.sh /moveSourceOutput
-RUN chown -R myuser:myuser /moveSourceOutput
-
 COPY $DOCKER_PATH/script/deleteModules.sh /deleteModules
-RUN chown -R myuser:myuser /deleteModules
 
 # Start
-COPY $DOCKER_PATH/build_files/start.sh /start.sh
-COPY $DOCKER_PATH/build_files/launch_sound.sh /launch_sound.sh
-
-ENTRYPOINT ["/start.sh"]
+RUN rm -f /start.sh
+COPY $DOCKER_PATH/start.sh /start.sh
+COPY $DOCKER_PATH/build_files/start.sh /opt/start-hub.sh
+COPY $DOCKER_PATH/build_files/launch_sound.sh /opt/launch_sound.sh
 
 EXPOSE 22
 EXPOSE 1935
+
+
+CMD ["-r","800x600","-u","1000","-g","1000","-p","55555","-h","localhost"]
