@@ -171,6 +171,10 @@ COMMAND_TiledCourse=LaunchTS+COMMAND_GIT
 client.send_server(COMMAND_TiledCourse)
 print("Out of git clone TiledCourse : "+ str(client.get_OK()))
 
+COMMAND_TilesetHUB=LaunchTS+" bash -c 'cd TiledCourse; git pull origin TilesetHUB; git checkout TilesetHUB'"
+client.send_server(COMMAND_TilesetHUB)
+print("Out of TilesetHUB : "+ str(client.get_OK()))
+
 COMMAND_copy=LaunchTS+"cp -r TiledCourse/webrtcconnect/DockerHub/dockerRunHub.sh "+\
                "TiledCourse/webrtcconnect/DockerHub/dockerStop.sh "+\
                "TiledCourse/webrtcconnect/build_nodes_file "+\
@@ -194,20 +198,32 @@ HUBName='HUB-CR'+IdClassroom
 
 ID="id_rsa_"+HTTP_IP        
 
+
+TileSetHUB=TileSet+'HUB'
+CreateTSHUB='create TS='+TileSetHUB+' Nb=1'
+client.send_server(CreateTSHUB)
+
+# Execute on each/a set of tiles
+ExecuteTSHUB='execute TS='+TileSetHUB+" "
+# Launch a command on the frontend
+LaunchTSHUB='launch TS='+TileSetHUB+" "+JOBPath+' '
+
+
 def Run_Hub():
-    COMMAND=LaunchTS+' ./dockerRunHub.sh '+\
+    # DEBUG : don't delete Hub on exit
+    # COMMAND=LaunchTSHUB+' sed -e \'s&--rm&&\' -i dockerRunHub.sh '
+    # client.send_server(COMMAND)
+    # print("Out of launch Hub : "+ str(client.get_OK()))
+
+    COMMAND=LaunchTSHUB+' ./dockerRunHub.sh '+\
         NOM_FICHIER_ETUDIANT_GENERE+' '+\
         RTMPPORT+' '+SERVER_JITSI+' '+VideoDeviceNumber+' '+\
-        GPU_FILE+" "+network+" "+domain+" "+init_IP+" "+CLIENT+" "+DOCKER_NAME+" "+DATE
+        GPU_FILE+" "+network+" "+domain+" "+init_IP+" "+CLIENT+" TileSetPort "+HTTP_FRONTEND+" "+DOCKER_NAME+" "+DATE
 
     print("\nCommand RunHub : "+COMMAND)
     client.send_server(COMMAND)
     print("Out of launch Hub : "+ str(client.get_OK()))
-
-    # Copy ssh key to frontend from connection to HUB :
-
-    send_file_server(client,TileSet,".ssh", ID, JOBPath)
-    send_file_server(client,TileSet,".ssh", ID+".pub", JOBPath)
+    sys.stdout.flush()
 
     global HUB_Host
     with open("list_hostsgpu","r") as hostfile :
@@ -216,32 +232,46 @@ def Run_Hub():
     global DOCKER_HUB
     DOCKER_HUB='ssh '+HUB_Host+' docker'
     
-    COMMAND=LaunchTS+' scp '+ID+'* '+HUB_Host+":/tmp"
+    # Copy ssh key to frontend from connection to HUB :
+
+    send_file_server(client,TileSetHUB,".ssh", ID, JOBPath)
+    send_file_server(client,TileSetHUB,".ssh", ID+".pub", JOBPath)
+
+    COMMAND=LaunchTSHUB+' scp '+ID+'* '+HUB_Host+":/tmp"
     client.send_server(COMMAND)
     print("Out of send key : "+ str(client.get_OK()))
 
-    COMMAND=LaunchTS+' '+DOCKER_HUB+' cp -a /tmp/'+ID+' '+HUBName+':/home/myuser/.ssh/'
+    COMMAND=LaunchTSHUB+' '+DOCKER_HUB+' cp -a /tmp/'+ID+' '+HUBName+':/home/myuser/.ssh/'
     client.send_server(COMMAND)
     print("Out of put key on Hub : "+ str(client.get_OK()))
-    
-    COMMAND=LaunchTS+' '+DOCKER_HUB+' cp -a /tmp/'+ID+'.pub '+HUBName+':/home/myuser/.ssh/'
+    sys.stdout.flush()
+
+    COMMAND=LaunchTSHUB+' '+DOCKER_HUB+' cp -a /tmp/'+ID+'.pub '+HUBName+':/home/myuser/.ssh/'
     client.send_server(COMMAND)
     print("Out of put pub key on Hub : "+ str(client.get_OK()))
 
-    COMMAND=LaunchTS+' bash -c " rm -f '+ID+'* ; ssh '+HUB_Host+" rm -f /tmp/"+ID+'* "'
+    COMMAND=LaunchTSHUB+' bash -c " rm -f '+ID+'* ; ssh '+HUB_Host+" rm -f /tmp/"+ID+'* "'
     client.send_server(COMMAND)
     print("Out of rm key : "+ str(client.get_OK()))
+    sys.stdout.flush()
 
-
-    COMMAND=LaunchTS+' '+DOCKER_HUB+\
-        ' exec '+HUBName+' bash -c \'"chown myuser:myuser /home/myuser/.ssh/'+ID+'* ;'+\
-        ' chmod 600 /home/myuser/.ssh/'+ID+'* "\''
-    client.send_server(COMMAND)
-    print("Out of chmod key on Hub : "+ str(client.get_OK()))
+    client.send_server(ExecuteTSHUB+' chmod 400 /home/myuser/.ssh/'+ID)
+    print("Out of chmod "+ID+" : "+ str(client.get_OK()))
+    
+    client.send_server(ExecuteTSHUB+' chmod 700 /home/myuser/.ssh')
+    print("Out of chmod .ssh : "+ str(client.get_OK()))
+    
+    # COMMAND=LaunchTSHUB+' '+DOCKER_HUB+\
+    #     ' exec '+HUBName+' bash -c \'"chown myuser:myuser /home/myuser/.ssh/'+ID+'* ;'+\
+    #     ' chmod 600 /home/myuser/.ssh/'+ID+'* "\''
+    # client.send_server(COMMAND)
+    # print("Out of chmod key on Hub : "+ str(client.get_OK()))
 
 Run_Hub()
 
 IP_Hub=domain+"."+str(int(init_IP)-1)
+
+sys.stdout.flush()
 
 
 def Kill_Hub():
@@ -257,6 +287,7 @@ REF_CAS=str(NUM_STUDENTS)+" "+DATE+" "+DOCKERSPACE_DIR+" "+DOCKER_NAME
 
 COMMANDStop=os.path.join(TILEDOCKERS_path,"stop_dockers")+" "+REF_CAS+" "+os.path.join(JOBPath,GPU_FILE)
 print("\n"+COMMANDStop)
+sys.stdout.flush()
 
 nethost="VM"
 
@@ -272,7 +303,7 @@ def Run_Vm():
     print("Out of launch Vm : "+ str(client.get_OK()))
 
 Run_Vm()
-
+sys.stdout.flush()
 
 # Build nodes.json file from new dockers list
 def build_nodes_file():
@@ -287,10 +318,10 @@ def build_nodes_file():
     client.send_server(COMMAND)
     print("Out of build_nodes_file : "+ str(client.get_OK()))
     time.sleep(2)
-    get_file_client(client,TileSet,JOBPath,"nodes.json",".")
-    #os.system('rm -f ./nodes.json')
-
+    launch_nodes_json()
+    
 build_nodes_file()
+sys.stdout.flush()
 
 time.sleep(2)
 # Launch docker tools
@@ -321,10 +352,12 @@ def launch_sound():
     client.send_server(COMMAND)
     print("Out of socket native detection : "+ str(client.get_OK()))
 
+    get_file_client(client,TileSet,JOBPath,"out_native",".")
+    with open("out_native","r") as native :
+        pulsesocket=native.readline().replace('\n','')
+
     # Add pulseaudio tunnel on Hub to frontend:
-    COMMAND=LaunchTS+\
-        ' bash -c "cat out_native |xargs -I { '+DOCKER_HUB+' exec -u myuser '+HUBName+' /launch_sound.sh { "'+HTTP_IP+' '+HTTP_LOGIN 
-    client.send_server(COMMAND)
+    client.send_server(ExecuteTSHUB+' /opt/launch_sound.sh '+pulsesocket+' '+HTTP_IP+' '+HTTP_LOGIN)
     print("Out of launch_sound HUB : "+ str(client.get_OK()))
 
     # Pulse VM :
@@ -337,15 +370,17 @@ def launch_sound():
     client.send_server(ExecuteTS+' /opt/launch_sound.sh')
     print("Out of launch_sound VM : "+ str(client.get_OK()))
 
+    sys.stdout.flush()
+
 
 # Launch OBS on the frontend
 def launch_OBS():
 
-    COMMAND_DISPLAY=LaunchTS+"./get_DISPLAY.sh"
+    COMMAND_DISPLAY=LaunchTSHUB+"./get_DISPLAY.sh"
     client.send_server(COMMAND_DISPLAY)
     print("Out of get DISPLAY for user : "+ str(client.get_OK()))
 
-    COMMAND_OBS=LaunchTS+"./launch_obs.sh "+HTTP_FRONTEND+" "+RTMPPORT+" "+IdClassroom+" &"
+    COMMAND_OBS=LaunchTSHUB+"./launch_obs.sh "+HTTP_FRONTEND+" "+RTMPPORT+" "+IdClassroom+" &"
     client.send_server(COMMAND_OBS)
     print("Out of execute OBS for user : "+ str(client.get_OK()))
 
@@ -381,7 +416,8 @@ def launch_chrome():
             client.send_server(CommandTS)
             client.get_OK()
     time.sleep(3)
-            
+    sys.stdout.flush()
+        
 #TODO
 #./mute ${VM_NAME}
 #./audioOff ${VM_NAME}
@@ -413,11 +449,11 @@ def launch_chrome():
 def kill_all_containers():
     Kill_Hub()
 
-    COMMAND=LaunchTS+' killall obs'
+    COMMAND=LaunchTSHUB+' killall obs'
     client.send_server(COMMAND)
 
-    COMMAND=LaunchTS+' exit_sound.sh'
-    client.send_server(COMMAND)
+    # COMMAND=LaunchTSHUB+' exit_sound.sh'
+    # client.send_server(COMMAND)
     
     client.send_server(ExecuteTS+' killall Xvnc')
     print("Out of killall command : "+ str(client.get_OK()))
