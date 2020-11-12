@@ -45,7 +45,7 @@ then
 	DOCKERARGS='-r 1920x1080 -u '${myuid}' -g '${mygid}' '${DOCKEROPTIONS} 
 	SSHPort=$IdClassroom"222"
 
-	ssh ${realhost} bash -c "mkdir /tmp/hub-${DATE} && chmod 700 /tmp/hub-${DATE}"
+	ssh ${realhost} bash -c "'( mkdir /tmp/hub-${DATE} 2>/dev/null ) && chmod 700 /tmp/hub-${DATE}'"
 	ssh ${realhost} docker create \
 	    -p 0.0.0.0:${SSHPort}:22 \
 	    -p 0.0.0.0:${RTMPPort}:1935 \

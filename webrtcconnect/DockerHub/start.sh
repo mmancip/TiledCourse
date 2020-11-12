@@ -9,7 +9,7 @@ ARGS=$@
 myUID=1000
 myGID=1000
 myPORT=55555
-myFront=localhost
+myFront=myuser@localhost
 if [ -z "$1" ]; then
 	echo Usage: $0 [-r RESOL_XxRESOL_Y] -u UID [-g GID] -p PORTserver -h Frontend
 	exit 1
@@ -35,7 +35,7 @@ else
 	    esac
 	    i=$((i+2));
 	done
-fi
+    fi
 fi
 
 
@@ -56,6 +56,8 @@ LOGFILE=${HOME_user}/.vnc/$(hostname).log
 touch $LOGFILE
 chown myuser:myuser $LOGFILE
 
+echo Random Password Generated: nopasshub > $LOGFILE
+
 echo "start.sh with args : ${ARGS[*]}" >> $LOGFILE
 
 
@@ -68,5 +70,9 @@ echo export DOCKERID=$DOCKERID >> ${HOME_user}/.bashrc
 # Run the client_python
 cd
 echo $( hostname )
+echo "export HOSTNAME="${HOSTNAME} >> /etc/profile.d/env_variable.sh
 
 su - myuser -c "/opt/client_python ${DOCKERID} ${myPORT} ${myFront}"
+# while true; do
+#     sleep 100
+# done
