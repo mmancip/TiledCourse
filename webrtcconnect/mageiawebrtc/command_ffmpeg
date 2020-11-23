@@ -3,8 +3,13 @@ ID_CLASSROOM=$1
 VIDEO_DEVICE=$2
 IP_Hub=$3
 
-ffmpeg -nostdin -nostats -hide_banner -loglevel warning -i rtmp://${IP_Hub}/live/classroom${ID_CLASSROOM} -f v4l2 /dev/video${VIDEO_DEVICE} > /home/myuser/.vnc/out_ffmpeg 2>&1 < /dev/null &
+v4l2-ctl --device=/dev/video${VIDEO_DEVICE} --all |grep "Format Video Capture" 2>&1 >/dev/null
+RET=$?
 
-sleep 2
+if [[ $RET -gt 0 ]]; then 
+    ffmpeg -nostdin -nostats -hide_banner -loglevel warning -i rtmp://${IP_Hub}/live/classroom${ID_CLASSROOM} -f v4l2 /dev/video${VIDEO_DEVICE} > /home/myuser/.vnc/out_ffmpeg 2>&1 >/dev/null &
+
+    sleep 2
+fi
 
 pgrep -fa ffmpeg && exit 0
