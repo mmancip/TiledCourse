@@ -171,10 +171,6 @@ COMMAND_TiledCourse=LaunchTS+COMMAND_GIT
 client.send_server(COMMAND_TiledCourse)
 print("Out of git clone TiledCourse : "+ str(client.get_OK()))
 
-COMMAND_TilesetHUB=LaunchTS+" bash -c 'cd TiledCourse; git pull origin TilesetHUB; git checkout TilesetHUB'"
-client.send_server(COMMAND_TilesetHUB)
-print("Out of TilesetHUB : "+ str(client.get_OK()))
-
 COMMAND_copy=LaunchTS+"cp -r TiledCourse/webrtcconnect/DockerHub/dockerRunHub.sh "+\
                "TiledCourse/webrtcconnect/DockerHub/dockerStop.sh "+\
                "TiledCourse/webrtcconnect/build_nodes_file "+\
@@ -237,9 +233,18 @@ def Run_Hub():
     send_file_server(client,TileSetHUB,".ssh", ID, JOBPath)
     send_file_server(client,TileSetHUB,".ssh", ID+".pub", JOBPath)
 
-    COMMAND=LaunchTSHUB+' scp '+ID+'* '+HUB_Host+":/tmp"
+    COMMAND=LaunchTSHUB+' chmod 400 '+ID
+    client.send_server(COMMAND)
+    print("Out of chmod key : "+ str(client.get_OK()))
+
+    COMMAND=LaunchTSHUB+' scp -p '+ID+'* '+HUB_Host+":/tmp"
     client.send_server(COMMAND)
     print("Out of send key : "+ str(client.get_OK()))
+
+    # COMMAND=LaunchTSHUB+' ssh '+HUB_Host+' chmod 400 /tmp/'+ID
+    # client.send_server(COMMAND)
+    # print("Out of chmod key on Hub : "+ str(client.get_OK()))
+    # sys.stdout.flush()
 
     COMMAND=LaunchTSHUB+' '+DOCKER_HUB+' cp -a /tmp/'+ID+' '+HUBName+':/home/myuser/.ssh/'
     client.send_server(COMMAND)
@@ -255,11 +260,11 @@ def Run_Hub():
     print("Out of rm key : "+ str(client.get_OK()))
     sys.stdout.flush()
 
-    client.send_server(ExecuteTSHUB+' chmod 400 /home/myuser/.ssh/'+ID)
-    print("Out of chmod "+ID+" : "+ str(client.get_OK()))
+    # client.send_server(ExecuteTSHUB+' chmod 400 /home/myuser/.ssh/'+ID)
+    # print("Out of chmod "+ID+" : "+ str(client.get_OK()))
     
-    client.send_server(ExecuteTSHUB+' chmod 700 /home/myuser/.ssh')
-    print("Out of chmod .ssh : "+ str(client.get_OK()))
+    # client.send_server(ExecuteTSHUB+' chmod 700 /home/myuser/.ssh')
+    # print("Out of chmod .ssh : "+ str(client.get_OK()))
     
     # COMMAND=LaunchTSHUB+' '+DOCKER_HUB+\
     #     ' exec '+HUBName+' bash -c \'"chown myuser:myuser /home/myuser/.ssh/'+ID+'* ;'+\
@@ -272,7 +277,6 @@ Run_Hub()
 IP_Hub=domain+"."+str(int(init_IP)-1)
 
 sys.stdout.flush()
-
 
 def Kill_Hub():
     COMMAND=LaunchTSHUB+' ./dockerStop.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+GPU_FILE
@@ -304,6 +308,7 @@ def Run_Vm():
 
 Run_Vm()
 sys.stdout.flush()
+NUM_DOCKERS=NUM_STUDENTS
 
 # Build nodes.json file from new dockers list
 def build_nodes_file():
@@ -370,6 +375,8 @@ def launch_sound():
     client.send_server(ExecuteTS+' /opt/launch_sound.sh')
     print("Out of launch_sound VM : "+ str(client.get_OK()))
 
+    # client.send_server(ExecuteTS+' nohup bash -c "killall pulseaudio" </dev/null 2>&1 > /dev/null &')
+    # client.get_OK()
     sys.stdout.flush()
 
 
@@ -386,42 +393,139 @@ def launch_OBS():
 
     time.sleep(3)
     
-    COMMAND_ffmpeg="/opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" "+IP_Hub+" &"
-    client.send_server(ExecuteTS+' '+COMMAND_ffmpeg)
-    print("Out of ffmpeg : "+ str(client.get_OK()))
+    COMMAND_ffmpeg=" /opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" "+IP_Hub+" &"
+    with open(FILEPATH) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=';')
+        count_lines=0
+        for row in csv_reader:
+            count_lines=count_lines+1
+            TilesStr=' Tiles=('+containerId(count_lines)+') '
+            client.send_server(ExecuteTS+TilesStr+COMMAND_ffmpeg)
+            print("Out of ffmpeg : "+ str(client.get_OK()))
+            time.sleep(1)
     sys.stdout.flush()
 
 
 # Launch google-chrome
 def launch_chrome():
     COMMAND_CHROME="/opt/command_chrome "+' '+SERVER_JITSI+' '+TeacherFirstname+'_'+TeacherLastname+' '+TeacherEmail
-
+    client.send_server(ExecuteTSHUB+' nohup bash -c "pactl list > $HOME/.vnc/out_sound_0" </dev/null 2>&1 > /dev/null &')
+    client.get_OK()
+    time.sleep(0.5)
     with open(FILEPATH) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=';')
         count_lines=0
         for row in csv_reader:
-
             print(", ".join(row))
             count_lines=count_lines+1
-
             #UserName=row[0]
             #mail=row[1]
             roomName=row[2]
-
             TilesStr=' Tiles=('+containerId(count_lines)+') '
             COMMAND_CHROMEi=COMMAND_CHROME+" "+roomName+" &"
-            
             print("%d Chrome command : %s" % (count_lines,COMMAND_CHROMEi))
             CommandTS=ExecuteTS+TilesStr+COMMAND_CHROMEi
             client.send_server(CommandTS)
             client.get_OK()
-    time.sleep(3)
+            client.send_server(ExecuteTSHUB+' nohup bash -c "pactl list > $HOME/.vnc/out_sound_'+str(count_lines)+'" </dev/null 2>&1 > /dev/null &')
+            client.get_OK()
+    
     sys.stdout.flush()
-        
-#TODO
-#./mute ${VM_NAME}
-#./audioOff ${VM_NAME}
+    time.sleep(3)
+    launch_mute()
+    
 
+def launch_mute():
+    for i in range(NUM_STUDENTS):
+        VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (i+1)
+        client.send_server(ExecuteTSHUB+' /home/myuser/mute '+VM_NAME)
+        client.get_OK()
+        client.send_server(ExecuteTSHUB+' /home/myuser/audioOff '+VM_NAME)
+        client.get_OK()
+    time.sleep(3)
+    register()
+    
+    client.send_server(ExecuteTSHUB+' nohup bash -c "pactl info | sed -En \'s/Default Sink: (.*)/\1/p\' > $HOME/.vnc/out_default_sink" </dev/null 2>&1 > /dev/null &')
+    client.get_OK()
+    client.send_server(ExecuteTSHUB+' nohup bash -c "pactl info | sed -En \'s/Default Source: (.*)/\1/p\' > $HOME/.vnc/out_default_source" </dev/null 2>&1 > /dev/null &')
+    client.get_OK()
+
+        
+def register():
+    for i in range(NUM_STUDENTS):
+        VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (i+1)
+        client.send_server(ExecuteTSHUB+' nohup bash -c "echo '+str(i)+' $( /searchSinkId '+VM_NAME+') >> $HOME/.vnc/list_sink" </dev/null 2>&1 > /dev/null &' )
+        client.get_OK()
+        client.send_server(ExecuteTSHUB+' nohup bash -c "echo '+str(i)+' $( /searchSourceId '+VM_NAME+') >> $HOME/.vnc/list_source" </dev/null 2>&1 > /dev/null &')
+        client.get_OK()
+        time.sleep(0.5)
+    client.send_server(ExecuteTSHUB+' scp -i .ssh/id_rsa_'+HTTP_IP+' $HOME/.vnc/list_* '+HTTP_LOGIN+'@'+HTTP_FRONTEND+':'+JOBPath)
+    client.get_OK()
+    get_file_client(client,TileSet,JOBPath,"list_sink",".")
+    get_file_client(client,TileSet,JOBPath,"list_source",".")
+    global sinkIds
+    sinkIds={}
+    with open("list_sink","r") as sinks :
+        sinkIdsL = [list(map(int,line.rstrip('\n').split())) for line in sinks]
+    try:
+        for l in sinkIdsL:
+            sinkIds[l[0]]=l[1]
+    except:
+        pass
+    global sourceIds
+    sourceIds={}
+    with open("list_source","r") as sources :
+        sourceIdsL = [list(map(int,line.rstrip('\n').split())) for line in sources]
+    try:
+        for l in sourceIdsL:
+            sourceIds[l[0]]=l[1]
+    except:
+        pass
+    
+    for i in sinkIds:
+        VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (i+1)
+        print("VM %s sink=%d" % (VM_NAME,sinkIds[i]))
+    for i in sourceIds:
+        VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (i+1)
+        print("VM %s source=%d" % (VM_NAME,sourceIds[i]))
+
+        
+def get_all_sinks():
+	client.send_server(ExecuteTSHUB+' nohup bash -c "pactl list sink-inputs > $HOME/.vnc/out_all_sinks" </dev/null 2>&1 > /dev/null &')
+	client.get_OK()
+	client.send_server(ExecuteTSHUB+' nohup bash -c "pactl list sink-inputs | grep -i -B23 application.process.host '+\
+									'> $HOME/.vnc/out_sinks" </dev/null 2>&1 > /dev/null &')
+	client.get_OK()
+
+
+def get_all_sources():
+	client.send_server(ExecuteTSHUB+' nohup bash -c "pactl list source-outputs > $HOME/.vnc/out_all_sources" </dev/null 2>&1 > /dev/null &')
+	client.get_OK()
+	client.send_server(ExecuteTSHUB+' nohup bash -c "pactl list source-outputs | grep -i -B23 application.process.host '+\
+									'> $HOME/.vnc/out_sources" </dev/null 2>&1 > /dev/null &')
+	client.get_OK()
+
+
+def open_sound(tileNum=-1,tileId='001'):
+        if ( tileNum > -1 ):
+            VM_NAME=DOCKER_NAME+"_"+DATE+"_"+str(tileNum+1)
+        else:
+            VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (int(tileId))
+        client.send_server(ExecuteTSHUB+' /home/myuser/unmute '+VM_NAME)
+        client.get_OK()
+        client.send_server(ExecuteTSHUB+' pactl set-source-output-mute '+VM_NAME+' 0')
+        client.get_OK()
+
+        
+def close_sound(tileNum=-1,tileId='001'):
+        if ( tileNum > -1 ):
+            VM_NAME=DOCKER_NAME+"_"+DATE+"_"+str(tileNum+1)
+        else:
+            VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (int(tileId))
+        client.send_server(ExecuteTSHUB+' /home/myuser/mute '+VM_NAME)
+        client.get_OK()
+        client.send_server(ExecuteTSHUB+' pactl set-source-output-mute '+VM_NAME+' 1')
+        client.get_OK()
 
 # Launch 
 # def launch_all(COMMAND):
@@ -447,17 +551,21 @@ def launch_chrome():
             
             
 def kill_all_containers():
-    Kill_Hub()
-
     COMMAND=LaunchTSHUB+' killall obs'
     client.send_server(COMMAND)
-
-    # COMMAND=LaunchTSHUB+' exit_sound.sh'
-    # client.send_server(COMMAND)
+    print("Out of kill obs : "+ str(client.get_OK()))
+    
+    # Exit sound :
+    COMMAND=LaunchTSHUB+' for id in $(pactl list modules | grep -B1 "null-sink\|loopback" | grep -o "[0-9]*"); do pactl unload-module $id &> /dev/null ; done' 
+    client.send_server(COMMAND)
+    print("Out of unload sound : "+ str(client.get_OK()))
     
     client.send_server(ExecuteTS+' killall Xvnc')
     print("Out of killall command : "+ str(client.get_OK()))
     client.send_server(LaunchTS+" "+COMMANDStop)
+
+    Kill_Hub()
+
     client.close()
 
     

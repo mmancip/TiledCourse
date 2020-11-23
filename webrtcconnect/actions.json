@@ -1,4 +1,7 @@
 {"action1":["launch_OBS","switch_video"],
  "action2":["launch_sound","perm_camera_mic"],
  "action3":["launch_chrome","open_in_browser"],
- "action4":["kill_all_containers","delete_forever"]}
+ "action4":["open_sound","volume_up"],
+ "action5":["close_sound","volume_off"],
+ "action6":["launch_mute","volume_mute"],
+ "action7":["kill_all_containers","delete_forever"]}

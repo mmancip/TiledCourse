@@ -15,6 +15,6 @@ if [ $RET -gt 0 ]; then
     echo 'default-server = tcp:localhost:4000' >> ${LOCAL_CONF}
 fi
 
-killall -9 pulseaudio
-pulseaudio -d &
+#killall -9 pulseaudio
+pulseaudio -D &
 

@@ -11,7 +11,7 @@ RUN urpmi.addmedia updates http://ftp.free.fr/mirrors/mageia.org/distrib/7/x86_6
     urpmi.update -a && \
     urpmi -y lib64nss3 lib64nspr4 lib64vulkan-loader1
 
-RUN urpmi -y at-3.1.23
+RUN dnf install -y  pulseaudio at
 
 RUN atd &
     
