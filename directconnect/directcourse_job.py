@@ -80,6 +80,14 @@ if __name__ == '__main__':
         except SystemExit:
             pass
 
+    # Call Etherpad and wait for result
+    def launch_etherpad():
+        #envoie de l'etherpad au prof par mèl (qui est ou ?) ou donner sur le texte
+        # TODO : options for etherpad :
+        etherpad="TiledCourse/etherpad/etherpad.py"
+        exec(compile(open(etherpad, "rb").read(), etherpad, 'exec'), globals(), locals())
+        send_file_server(client,TileSet,".", "directconnection.csv", JOBPath)
+        
     # Build nodes.json file from new dockers list
     def build_nodes_file():
         print("Build nodes.json file from new dockers list.")

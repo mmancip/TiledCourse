@@ -27,11 +27,16 @@ function min {
 
 DATE=$(date +%F_%H-%M-%S)
 
+# sort student file by login
+sort -o list_students -t ';' -k 3 ${FILEPATH}
+
+# sort machine/login file by login
+sort -o list_machines -t ',' -k 2 directconnection.csv
+
 echo '{ "nodes": [' > nodes.json
 #echo 'echo '' >> nodes.json' >> nodes.json
 i=0
-while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
-    #&& IFS='' read -r -u4 line2
+while IFS=';' read -r -u3 line || [[ -n "$line" ]] && IFS=',' read -r -u4 line2; do
 
   i2=$((2*(i+1)))
   i0=$(printf "%03d" $((i+1)))
@@ -46,22 +51,18 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
   echo "Student mail : " ${MAILstudent} 
 
   USERstudent=${aline[2]//[[:blank:]]/}
-  HOMEstudent=$HOMEstudents$USERstudent #TODO : change if home is in another place???
-  echo "Student home dir : $HOMEstudent"
+  #HOMEstudent=$HOMEstudents$USERstudent #TODO : change if home is in another place???
+  #echo "Student home dir : $HOMEstudent"
+
+
+  # Machine values
+  IFS=',' read -r -a aline2 <<<$line2
+
+  MACHINE=${aline2[0]}
+  echo "Machine : " ${MACHINE} 
   
   if [ $i -gt 0 ]; then
       echo '},' >> nodes.json
-  fi
-
-  id
-  ls -la $HOMEstudent/.vnc/out_node_*
-  
-  if [ -e $HOMEstudent/.vnc/out_node_* ]; then
-      PORTID=$(basename $HOMEstudent/.vnc/out_node_* | sed -e 's&out_node_&&')
-      NODEFile=$HOMEstudent/.vnc/out_node_${PORTID}
-  else
-      echo "Student "${STUDENT} " has not already connect his vnc."
-      #sleep 10
   fi
 
   pass=${line##* }
@@ -69,17 +70,18 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
   echo '{"title": "'${STUDENT}'",' >> nodes.json
 
   URL=$(echo $NOVNC_URL | envsubst) # expand envars in $NOVNC_URL
-  grep url ${NODEFile} |sed -e 's@"url" : "&port=@"url" : "'${URL}'?host='${HTTP_FRONTEND}'&true_color=1&encrypt=0&port=@' >> nodes.json
 
-  grep comment ${NODEFile} | sed -e "s&\": \"&\": \"${MAILstudent} &" >> nodes.json
+  IFS=';' read -r -a passline <<<$( grep ${USERstudent} list_password )
 
+  password=${passline[1]//[[:blank:]]/}
+
+  echo ' "url" : "'${URL}'?host='${MACHINE}'&port=5900&encrypt=0&password='${passord}'&true_color=1",' >> nodes.json
+  echo ' "comment" : "'${MAILstudent}' '${USERstudent}' '${DATE}'",' >> nodes.json
   echo ' "tags"  : ["'$TileSet'"],' >> nodes.json
   echo '  "variable" : "ID-'$i0'",' >> nodes.json
 
-  echo '"connection" : 1' >> nodes.json
-  
   i=$(( i + 1 ))
-done 3< ${FILEPATH}
+done 3< list_students 4< list_machines
 
 echo '}' >> nodes.json
 echo '] }' >> nodes.json
