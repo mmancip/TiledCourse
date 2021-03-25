@@ -17,9 +17,8 @@ import random
 DockerName='etherpad'
 
 def parse_args(argv):
-    nonlocal DockerName
     parser = argparse.ArgumentParser(
-        'From a connection Id in PostgreSQL DB get connection parameters from TiledViz database.')
+        'Detect etherpad docker parameters (APIKey, IP) for etherpad.py script.')
     parser.add_argument('-n', '--name', default=DockerName,
                         help='Etherpad name (default: '+DockerName+')')
     parser.add_argument('--debug', action='store_true',
