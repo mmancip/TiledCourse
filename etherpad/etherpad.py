@@ -81,10 +81,13 @@ def etherpad(**kwargs):
 
     #time.sleep(1)
     padID=passrandom(20)
-    print("Plese send PADID to all students :"+str(padID))
+    MESSAGE="Plese send PADID to all students :"+str(padID)
+    print(MESSAGE)
     sys.stdout.flush()
-
-
+    if (args.mail):
+        COMMAND='echo -e "'+MESSAGE+'" | iconv --from-code=UTF-8 --to-code=ISO-8859-1 | /sbin/sendmail -F "'+args.user+'" -f '+args.mail+' -t '+args.mail
+        os.system(COMMAND)
+        
     try:
         myauth=client.createAuthor(name=args.user)
         pad=client.createPad(padID=padID,text=initText)
