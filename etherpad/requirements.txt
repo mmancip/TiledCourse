@@ -1,3 +1,1 @@
-docker
 etherpad_lite
-bs4

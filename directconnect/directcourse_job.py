@@ -39,6 +39,11 @@ if __name__ == '__main__':
 
     CASE=config['CASE']['CASE_NAME']
 
+    APIKey=config['CASE']['APIKey']
+    etherpadhost=config['CASE']['etherpad']
+
+    VNCPORT=config['CASE']['VNCPORT']
+
     FILEPATH=config['CASE']['FILEPATH']
 
     def countlines(filename):
@@ -71,6 +76,7 @@ if __name__ == '__main__':
         SITE_config=os.path.join(JOBPath,os.path.basename(SITE_config))
 
         send_file_server(client,TileSet,".", FILEPATH, JOBPath)
+        send_file_server(client,TileSet,".", "list_password", JOBPath)
 
     except:
         print("Error sending files !")
@@ -82,12 +88,36 @@ if __name__ == '__main__':
 
     # Call Etherpad and wait for result
     def launch_etherpad():
-        #envoie de l'etherpad au prof par mèl (qui est ou ?) ou donner sur le texte
-        # TODO : options for etherpad :
-        etherpad="TiledCourse/etherpad/etherpad.py"
-        exec(compile(open(etherpad, "rb").read(), etherpad, 'exec'), globals(), locals())
-        send_file_server(client,TileSet,".", "directconnection.csv", JOBPath)
+        #etherpad build to the teacher by mail ? or give the key by text (but no copy/past ?)
+        #etherpadscript="TiledCourse/etherpad/etherpad.py"
         
+        os.system("wget https://files.pythonhosted.org/packages/13/6c/2079dac77d480fd49862d12465ed3369360ad9b8c9bb0e3fb79f1e7b650e/etherpad_lite-0.5.tar.gz")
+        os.system("tar xfz etherpad_lite-0.5.tar.gz")
+        sys.path.append(os.path.realpath('etherpad_lite-0.5'))
+        sys.path.append(os.path.realpath('TiledCourse/'))
+        from etherpad import etherpad
+        
+        # options for etherpad script :
+        #argList=sys.argv[1:]
+        #os.system('python another/location/test2.py %s'%(argList))
+        
+        #saveargv=sys.argv
+        #sys.argv=[etherpadscript,"--host="+etherpadhost,"-p","9001","-u",TVuser,"-a",APIKey]
+        print("host=%s ,port=%s ,user=%s ,apikey=%s " % (etherpadhost, "9001", TVuser, APIKey))
+        
+        # Call etherpad script :
+        try:
+            #exec(compile(open(etherpadscript, "rb").read(), etherpadscript, 'exec'), globals(), locals())
+            etherpad.etherpad(host=etherpadhost,port="9001",user=TVuser,apikey=APIKey)
+        except Exception as err:
+            traceback.print_exc(file=sys.stderr)
+            logging.error("Error calling %s : %s" % ( etherpadscript, err ))
+            return
+        #sys.argv=saveargv
+        send_file_server(client,TileSet,".", "directconnection.csv", JOBPath)
+
+    launch_etherpad()
+    
     # Build nodes.json file from new dockers list
     def build_nodes_file():
         print("Build nodes.json file from new dockers list.")
