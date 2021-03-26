@@ -52,28 +52,32 @@ def passrandom(nbchar):
 class Namespace:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
-                    
+        print(self.__dict__)
+        dir()
+        
 def etherpad(**kwargs):
+    for key, value in kwargs.items():
+        print ("%s == %s" %(key, value))
     if (len(kwargs) == 0):
         args = parse_args(sys.argv)
     else:
         args = Namespace(**kwargs)
         if ( args.host and args.port and args.user and args.apikey):
-            print("launch etherpad with %s:%s for user %s and key %s" % (args.host, args.port, args.user, args.apikey))
+            print("launch etherpad with %s:%s for user %s and key %s" % (str(args.host), args.port, args.user, str(args.apikey)))
         else:
             return 1
 
-    URL="http://"+args.host+":"+args.port+"/api"
+    URL="http://"+str(args.host).replace("'","")+":"+args.port+"/api"
     #print("URL ="+URL)
     sys.stdout.flush()
 
     #time.sleep(2)
     try:
-        client=EtherpadLiteClient(base_url=URL,base_params={"apikey":args.apikey},api_version="1",timeout=7000)
+        client=EtherpadLiteClient(base_url=URL,base_params={"apikey":str(args.apikey).replace("'","")},api_version="1",timeout=7000)
     except Exception as err:
         traceback.print_exc(file=sys.stderr)
         print("Error client : %s" % ( err ))
-        exit(1)
+        sys.exit(1)
 
     #time.sleep(1)
     padID=passrandom(20)
@@ -87,7 +91,7 @@ def etherpad(**kwargs):
     except Exception as err:
         traceback.print_exc(file=sys.stderr)
         print("Error create_pad : %s" % ( err ))
-        exit(2)
+        sys.exit(2)
     
     # help(pad)
 
@@ -105,7 +109,7 @@ def etherpad(**kwargs):
         except Exception as err:
             traceback.print_exc(file=sys.stderr)
             print("Error get_text : %s" % ( err ))
-            exit(2)
+            sys.exit(2)
 
         # COMMAND=URL+"/1/getText?apikey="+str(APIKEY)+"&padID="+str(padID)+"&jsonp=?"
         # os.system("curl "+COMMAND)
