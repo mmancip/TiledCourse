@@ -86,7 +86,7 @@ def etherpad(**kwargs):
     DATEcourse=re.sub(r'\..*','',datetime.datetime.isoformat(datetime.datetime.now(),sep='_').replace(":","-"))
     MESSAGE="Subject: [Course "+DATEcourse+"] new padID : "+str(padID)+" \nHello \nFor your course at "+DATEcourse+",please send this PadID to all students :\n"+str(padID)
     tf = tempfile.NamedTemporaryFile(mode="w+b",dir="/tmp",prefix="",delete=False)
-    tf.write(MESSAGE)
+    tf.write(MESSAGE.encode('utf-8'))
     tf.close()
     print(MESSAGE)
     sys.stdout.flush()
