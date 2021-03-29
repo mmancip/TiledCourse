@@ -81,13 +81,21 @@ def etherpad(**kwargs):
 
     #time.sleep(1)
     padID=passrandom(20)
-    MESSAGE="Plese send PADID to all students :"+str(padID)
+    DATEcourse=re.sub(r'\..*','',datetime.datetime.isoformat(datetime.datetime.now(),sep='_').replace(":","-"))
+    MESSAGE="Subject: [Course "+DATEcourse+"] new padID : "+str(padID)+" \nHello \nFor your course at "+DATEcourse+",please send this PadID to all students :\n"+str(padID)
+    tf = tempfile.NamedTemporaryFile(mode="w+b",dir="/tmp",prefix="",delete=False)
+    tf.write(MESSAGE)
+    tf.close()
     print(MESSAGE)
     sys.stdout.flush()
-    if (args.mail):
-        COMMAND='echo -e "'+MESSAGE+'" | iconv --from-code=UTF-8 --to-code=ISO-8859-1 | /sbin/sendmail -F "'+args.user+'" -f '+args.mail+' -t '+args.mail
-        os.system(COMMAND)
-        
+    try: 
+        if (args.mail):
+            #COMMAND='echo -e "'+MESSAGE+'" | iconv --from-code=UTF-8 --to-code=ISO-8859-1 | /sbin/sendmail -F "'+args.user+'" -f '+args.mail+' -t '+args.mail
+            COMMAND='/sbin/sendmail -F "'+args.user+'" -f '+args.mail+' -t '+args.mail+' < '+tf.name
+            os.system(COMMAND)
+    except:
+        pass
+    
     try:
         myauth=client.createAuthor(name=args.user)
         pad=client.createPad(padID=padID,text=initText)
