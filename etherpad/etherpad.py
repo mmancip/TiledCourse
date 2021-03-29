@@ -58,14 +58,15 @@ class Namespace:
         dir()
         
 def etherpad(**kwargs):
-    for key, value in kwargs.items():
-        print ("%s == %s" %(key, value))
+    # for key, value in kwargs.items():
+    #     print ("%s == %s" %(key, value))
     if (len(kwargs) == 0):
         args = parse_args(sys.argv)
     else:
         args = Namespace(**kwargs)
         if ( args.host and args.port and args.user and args.apikey):
-            print("launch etherpad with %s:%s for user %s and key %s" % (str(args.host), args.port, args.user, str(args.apikey)))
+            # print("launch etherpad with %s:%s for user %s and key %s" % (str(args.host), args.port, args.user, str(args.apikey)))
+            print("launch etherpad")
         else:
             return 1
 
@@ -84,7 +85,7 @@ def etherpad(**kwargs):
     #time.sleep(1)
     padID=passrandom(20)
     DATEcourse=re.sub(r'\..*','',datetime.datetime.isoformat(datetime.datetime.now(),sep='_').replace(":","-"))
-    MESSAGE="Subject: [Course "+DATEcourse+"] new padID : "+str(padID)+" \nHello \nFor your course at "+DATEcourse+",please send this PadID to all students :\n"+str(padID)
+    MESSAGE="Subject: [Course "+DATEcourse+"] new padID : "+padID.decode('utf-8')+" \nHello \nFor your course at "+DATEcourse+",please send this PadID to all students :\n"+padID.decode('utf-8')
     tf = tempfile.NamedTemporaryFile(mode="w+b",dir="/tmp",prefix="",delete=False)
     tf.write(MESSAGE.encode('utf-8'))
     tf.close()
