@@ -41,7 +41,8 @@ if __name__ == '__main__':
 
     APIKey=config['CASE']['APIKey']
     etherpadhost=config['CASE']['etherpad']
-
+    MAIL=config['CASE']['MAIL']
+    
     VNCPORT=config['CASE']['VNCPORT']
 
     FILEPATH=config['CASE']['FILEPATH']
@@ -108,7 +109,7 @@ if __name__ == '__main__':
         # Call etherpad script :
         try:
             #exec(compile(open(etherpadscript, "rb").read(), etherpadscript, 'exec'), globals(), locals())
-            etherpad.etherpad(host=etherpadhost,port="9001",user=TVuser,apikey=APIKey,mail="Martial.Mancip@MaisondelaSimulation.fr")
+            etherpad.etherpad(host=etherpadhost,port="9001",user=TVuser,apikey=APIKey,mail=MAIL)
         except Exception as err:
             traceback.print_exc(file=sys.stderr)
             logging.error("Error calling %s : %s" % ( etherpadscript, err ))
