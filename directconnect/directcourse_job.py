@@ -108,7 +108,7 @@ if __name__ == '__main__':
         # Call etherpad script :
         try:
             #exec(compile(open(etherpadscript, "rb").read(), etherpadscript, 'exec'), globals(), locals())
-            etherpad.etherpad(host=etherpadhost,port="9001",user=TVuser,apikey=APIKey)
+            etherpad.etherpad(host=etherpadhost,port="9001",user=TVuser,apikey=APIKey,mail="Martial.Mancip@MaisondelaSimulation.fr")
         except Exception as err:
             traceback.print_exc(file=sys.stderr)
             logging.error("Error calling %s : %s" % ( etherpadscript, err ))

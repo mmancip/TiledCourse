@@ -78,7 +78,7 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]] && IFS=',' read -r -u4 line2;
   echo ' "url" : "'${URL}'?host='${MACHINE}'&port='${VNCPORT}'&encrypt=0&password='${passord}'&true_color=1",' >> nodes.json
   echo ' "comment" : "'${MAILstudent}' '${USERstudent}' '${DATE}'",' >> nodes.json
   echo ' "tags"  : ["'$TileSet'"],' >> nodes.json
-  echo '  "variable" : "ID-'$i0'",' >> nodes.json
+  echo '  "variable" : "ID-'$i0'"' >> nodes.json
 
   i=$(( i + 1 ))
 done 3< list_students 4< list_machines
