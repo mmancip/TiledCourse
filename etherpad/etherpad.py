@@ -7,6 +7,8 @@ import re,traceback
 import sys,os,stat
 import argparse
 
+import tempfile
+
 import time,datetime
 import traceback
 import re
