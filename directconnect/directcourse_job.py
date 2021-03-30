@@ -32,9 +32,8 @@ if __name__ == '__main__':
 
     HTTP_FRONTEND=config['SITE']['HTTP_FRONTEND']
     HOMEstudents=config['SITE']['HOMEstudents']
-
-    SOCKETdomain=config['SITE']['SOCKETdomain']
-
+    EtherpadURL=config['SITE']['ETHERPAD'].replace('"','')
+    
     config.read(CASE_config)
 
     CASE=config['CASE']['CASE_NAME']
@@ -109,7 +108,7 @@ if __name__ == '__main__':
         # Call etherpad script :
         try:
             #exec(compile(open(etherpadscript, "rb").read(), etherpadscript, 'exec'), globals(), locals())
-            etherpad.etherpad(host=etherpadhost,port="9001",user=TVuser,apikey=APIKey,mail=MAIL)
+            etherpad.etherpad(host=etherpadhost,port="9001",user=TVuser,apikey=APIKey,mail=MAIL,filestud=FILEPATH,etherpadurl=EtherpadURL)
         except Exception as err:
             traceback.print_exc(file=sys.stderr)
             logging.error("Error calling %s : %s" % ( etherpadscript, err ))
