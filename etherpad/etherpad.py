@@ -85,7 +85,15 @@ def etherpad(**kwargs):
     #time.sleep(1)
     padID=passrandom(20)
     DATEcourse=re.sub(r'\..*','',datetime.datetime.isoformat(datetime.datetime.now(),sep='_').replace(":","-"))
-    MESSAGE="Subject: [Course "+DATEcourse+"] new padID : "+padID.decode('utf-8')+" \nHello \nFor your course at "+DATEcourse+",please send this PadID to all students :\n"+padID.decode('utf-8')
+    try:
+        if (args.etherpadurl):
+            PadURL=args.etherpadurl+padID.decode('utf-8')
+        else:
+            PadURL=padID.decode('utf-8')
+    except:
+        PadURL=padID.decode('utf-8')
+        
+    MESSAGE="Subject: [Course "+DATEcourse+"] new padID : "+PadURL+" \nHello \nFor your course at "+DATEcourse+",please use this PadID to put your (machine, login) :\n"+PadURL
     tf = tempfile.NamedTemporaryFile(mode="w+b",dir="/tmp",prefix="",delete=False)
     tf.write(MESSAGE.encode('utf-8'))
     tf.close()
@@ -93,9 +101,19 @@ def etherpad(**kwargs):
     sys.stdout.flush()
     try: 
         if (args.mail):
-            #COMMAND='echo -e "'+MESSAGE+'" | iconv --from-code=UTF-8 --to-code=ISO-8859-1 | /sbin/sendmail -F "'+args.user+'" -f '+args.mail+' -t '+args.mail
             COMMAND='/sbin/sendmail -F "'+args.user+'" -f '+args.mail+' -t '+args.mail+' < '+tf.name
             os.system(COMMAND)
+    except:
+        pass
+    try: 
+        if (args.filestud):
+            import csv
+            with open(args.filestud , newline='') as csvfile:
+                spamreader = csv.reader(csvfile, delimiter=';', quotechar='|')
+                for row in spamreader:
+                    destination=row[1]
+                    COMMAND='/sbin/sendmail -F "'+args.user+'" -f '+args.mail+' -t '+destination+' < '+tf.name
+                    os.system(COMMAND)
     except:
         pass
     
