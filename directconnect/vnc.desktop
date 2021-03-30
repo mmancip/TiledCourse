@@ -5,6 +5,6 @@ Type=Application
 Terminal=false
 Icon[fr_FR]=/opt/nfs/mdls/TiledViz/TiledViz.png
 Name[fr_FR]=TiledViz
-Exec=/opt/nfs/mdls/TiledViz/launch_vnc
+Exec=/opt/nfs/mdls/TiledViz/launch_vnc_local
 Name=TiledViz
 Icon=/opt/nfs/mdls/TiledViz/TiledViz.png

@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# Use with DEBUG=true if you need a log in $HOME/.vnc dir
+# You must execute this script in a DIR with site_config file for TiledViz tileset definition.
+
+# See TODO lines for your local installation (LDAP...)
+
+DEBUG=$1
+if [ X"$DEBUG" != X ]; then
+    set -vx
+fi
+
+VNCDIR=${HOME}/.vnc
+chmod 750 $VNCDIR
+
+if [ -f $VNCDIR/site_config ]; then
+    . $VNCDIR/site_config
+fi
+
+# TODO : Change LOGNAME definition if needed
+LOGNAME=${USER}
+
+if [ ! -d ${VNCDIR} ]; then
+    mkdir ${VNCDIR}
+    chmod 750 $VNCDIR
+fi
+
+DATE=$(date +%F_%H-%M)
+if [ -n $DEBUG ]; then
+    LOGFILE=${VNCDIR}/out_$(hostname)_${DATE}_$$
+else
+    LOGFILE=/dev/null
+fi
+echo $(hostname) " VNC : " $(pgrep -fa x11vnc |grep $LOGNAME) |tee -a $LOGFILE 
+
+INSTALLPATH=$(dirname ${BASH_SOURCE[0]})
+
+if [ ! -n $DISPLAY ]; then
+    export DISPLAY=:0.0
+fi
+export LOGvnc=${VNCDIR}/vnc-server_${DATE}_$$
+x11vnc -display $DISPLAY -forever -noncache -noxdamage  -tightfilexfer -rfbauth ${VNCDIR}/passvnc -cursor -arrow -listen=localhost -shared > ${LOGvnc} 2>&1 &
+
+echo "detect x11vnc :" |tee -a $LOGFILE
+ivnc=0
+while [ true ]; do
+    export PIDvnc=$( pgrep -fa x11vnc |grep $LOGNAME |grep ${VNCDIR}/passvnc |sed -e 's/\([0-9]*\) .*/\1/' )
+    echo ${PIDvnc[@]} >>  $LOGFILE
+    ivnc=$(( ivnc + 1 ))
+    if [ X"${PIDvnc[@]}" != X ]; then
+	break;
+    else
+	sleep 1
+    fi
+    if [ $ivnc -gt 20 ]; then
+	echo "Timeout for x11vnc launch. Something wrong append." |tee -a $LOGFILE
+	sleep 1
+	exit -2
+    fi
+done
+sleep 2
+export RFBPORT=$(grep "PORT=" ${LOGvnc} |sed -e 's/PORT=//' )
+echo "PORT = $RFBPORT" |tee -a $LOGFILE
+
+zenity --info --text "VNC launched." &
