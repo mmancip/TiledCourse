@@ -16,5 +16,5 @@ if [ $RET -gt 0 ]; then
 fi
 
 #killall -9 pulseaudio
-pulseaudio -D &
+#pulseaudio --daemonize=no &
 
