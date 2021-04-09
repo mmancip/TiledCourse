@@ -8,8 +8,8 @@ import argparse
 import re, datetime
 import inspect
 
-sys.path.append(os.path.realpath('/TiledViz/TVConnections/'))
-from connect import sock
+# sys.path.append(os.path.realpath('/TiledViz/TVConnections/'))
+# from connect import sock
 
 import json
 import csv
@@ -120,6 +120,7 @@ client.send_server(CreateTS)
 
 NOM_FICHIER_ETUDIANT_GENERE=IdClassroom+"_classroom.list"
 
+# TODO : detect RTM free PORT on what machine ? 
 # IdClassroom < 65 ! car num port < 65535
 RTMPPORT=SOCKETdomain+"000"
 
@@ -173,7 +174,6 @@ print("Out of git clone TiledCourse : "+ str(client.get_OK()))
 
 COMMAND_copy=LaunchTS+"cp -r TiledCourse/webrtcconnect/DockerHub/dockerRunHub.sh "+\
                "TiledCourse/webrtcconnect/DockerHub/dockerStop.sh "+\
-               "TiledCourse/webrtcconnect/build_nodes_file "+\
                "TiledCourse/webrtcconnect/launch_obs.sh "+\
                "TiledCourse/webrtcconnect/get_DISPLAY.sh "+\
                "TiledCourse/webrtcconnect/obs "+\
@@ -303,8 +303,8 @@ def Run_Vm():
              " "+network+" "+nethost+" "+domain+" "+init_IP+" TileSetPort "+UserFront+"@"+Frontend+" "+OPTIONS
     print("\nCommand RunVm : "+COMMAND)
     client.send_server(LaunchTS+' '+COMMAND)
-    sys.stdout.flush()
     print("Out of launch Vm : "+ str(client.get_OK()))
+    sys.stdout.flush()
 
 Run_Vm()
 sys.stdout.flush()
@@ -313,17 +313,13 @@ NUM_DOCKERS=NUM_STUDENTS
 # Build nodes.json file from new dockers list
 def build_nodes_file():
     print("Build nodes.json file from new dockers list.")
-    COMMAND=LaunchTS+' chmod u+x build_nodes_file '
-    client.send_server(COMMAND)
-    print("Out of chmod build_nodes_file : "+ str(client.get_OK()))
 
-    COMMAND=LaunchTS+' ./build_nodes_file '+CASE_config+' '+SITE_config+' '+TileSet
+    COMMAND=LaunchTS+' TiledCourse/webrtcconnect/build_nodes_file '+CASE_config+' '+SITE_config+' '+TileSet
     print("\nCommand dockers : "+COMMAND)
 
     client.send_server(COMMAND)
     print("Out of build_nodes_file : "+ str(client.get_OK()))
     time.sleep(2)
-    launch_nodes_json()
     
 build_nodes_file()
 sys.stdout.flush()
@@ -337,8 +333,17 @@ def launch_resize(RESOL="1440x900"):
 launch_resize()
 
 def launch_tunnel():
-    client.send_server(ExecuteTS+' /opt/tunnel_ssh '+SOCKETdomain+' '+HTTP_FRONTEND+' '+HTTP_LOGIN)
+    client.send_server(ExecuteTS+' /opt/tunnel_ssh '+HTTP_FRONTEND+' '+HTTP_LOGIN)
     print("Out of tunnel_ssh : "+ str(client.get_OK()))
+    # Get back PORT
+    for i in range(NUM_DOCKERS):
+        i0="%0.3d" % (i+1)
+        client.send_server(ExecuteTS+' Tiles=('+containerId(i+1)+') '+
+                           'bash -c "cat .vnc/port |xargs -I @ sed -e \"s#port='+SOCKETdomain+i0+'#port=@#\" -i CASE/nodes.json"')
+        print("Out of change port %s : " % (i0) + str(client.get_OK()))
+
+    sys.stdout.flush()
+    launch_nodes_json()
 
 launch_tunnel()
 
