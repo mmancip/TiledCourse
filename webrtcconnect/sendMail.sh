@@ -40,12 +40,15 @@ then
 			s/\${SCHOOL_NAME}/${SchoolName//'/'/"\/"}/g")
 		
 
-		COMMAND='echo -e "${MESSAGE}" | iconv --from-code=UTF-8 --to-code=ISO-8859-1 | /sbin/sendmail -F "${SenderName}" -f ${SenderEmail} -t ${StudentEmail}'
-		
+		#COMMAND='echo -e "${MESSAGE}" | iconv --from-code=UTF-8 --to-code=ISO-8859-1 | /usr/sbin/sendmail -F "${SenderName}" -f ${SenderEmail} -t ${StudentEmail}'
+		echo ${MESSAGE} | iconv --from-code=UTF-8 --to-code=ISO-8859-1 > "mail_${StudentName}.mel"
+		COMMAND='/usr/sbin/sendmail -F "${SenderName}" -f ${SenderEmail} -t ${StudentEmail} < "mail_${StudentName}.mel"'
+
+		eval echo ${COMMAND}
 		eval ${COMMAND}
 
-		echo -e " Sender: ${SenderName} - ${SenderEmail} at ${StudentEmail} \n\n${MESSAGE} \n \n ============================= \n"
-
+		echo -e " Sender: ${SenderName} - ${SenderEmail} to ${StudentEmail}."
+		#\n\n${MESSAGE} \n \n ============================= \n"
 
 	done < <(tail -n "+2" ${FileName})
 else
