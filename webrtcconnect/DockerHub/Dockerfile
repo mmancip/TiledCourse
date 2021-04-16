@@ -86,17 +86,6 @@ ENV TEACHER_EMAIL -1
 COPY $DOCKER_PATH/build_files/ssh/id_rsa_hub.pub /home/myuser/.ssh/authorized_keys
 COPY $DOCKER_PATH/build_files/ssh/id_rsa_hub*  /home/myuser/.ssh/
 
-# Script
-COPY $DOCKER_PATH/script/muteAll.sh /home/myuser/mute
-COPY $DOCKER_PATH/script/unmuteAll.sh /home/myuser/unmute
-COPY $DOCKER_PATH/script/audioOffAll.sh /home/myuser/audioOff
-COPY $DOCKER_PATH/script/audioOnAll.sh /home/myuser/audioOn
-COPY $DOCKER_PATH/script/searchSinkId.sh /searchSinkId
-COPY $DOCKER_PATH/script/searchSourceId.sh /searchSourceId
-COPY $DOCKER_PATH/script/moveSinkInput.sh /moveSinkInput
-COPY $DOCKER_PATH/script/moveSourceOutput.sh /moveSourceOutput
-COPY $DOCKER_PATH/script/deleteModules.sh /deleteModules
-
 # Start
 RUN rm -f /start.sh
 COPY $DOCKER_PATH/start.sh /start.sh

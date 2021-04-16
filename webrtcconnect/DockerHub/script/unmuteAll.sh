@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 StudentFileName="./students.list"
 
@@ -12,12 +12,12 @@ unmute() {
 attributeDevice() {
 	if [ $2 == "sink" ]
 	then
-		/moveSourceOutput $1 "stu_sink.monitor"
-		/moveSinkInput $1 "alsa_output.pci-0000_00_1b.0.analog-stereo"
+		TiledCourse/webrtcconnect/DockerHub/script/moveSourceOutput.sh $1 "stu_sink.monitor"
+		TiledCourse/webrtcconnect/DockerHub/script/moveSinkInput.sh $1 "alsa_output.pci-0000_00_1b.0.analog-stereo"
 	elif [ $2 == "source" ]
 	then
-		/moveSourceOutput $1 "alsa_input.pci-0000_00_1b.0.analog-stereo"
-		/moveSinkInput $1 "stu_source"	
+		TiledCourse/webrtcconnect/DockerHub/script/moveSourceOutput.sh $1 "alsa_input.pci-0000_00_1b.0.analog-stereo"
+		TiledCourse/webrtcconnect/DockerHub/script/moveSinkInput.sh $1 "stu_source"	
 	fi
 }
 

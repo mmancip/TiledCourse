@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 StudentFileName="./students.list"
 
@@ -9,7 +9,7 @@ attributeDevice() {
 }
 
 mute() {
-	for id in $(/searchSinkId $1)
+	for id in $(TiledCourse/webrtcconnect/DockerHub/script/searchSinkId.sh $1)
 	do
 		attributeDevice $1
 		pactl set-sink-input-mute $id 1

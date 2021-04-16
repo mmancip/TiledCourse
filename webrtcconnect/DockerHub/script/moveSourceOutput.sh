@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 if [ "$#" -eq 2 ]
 then
-	for id in $(/searchSourceId $1)
+	for id in $(TiledCourse/webrtcconnect/DockerHub/script/searchSourceId.sh $1)
 	do
 		pactl move-source-output $id $2
 	done

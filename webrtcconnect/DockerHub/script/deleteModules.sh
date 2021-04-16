@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 for id in $(pactl list modules | grep -B1 "null-sink\|loopback" | grep -o "[0-9]*")
 do 

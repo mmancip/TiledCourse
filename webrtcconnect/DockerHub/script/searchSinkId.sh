@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 res=$(pactl list sink-inputs | grep -i -B23 "application.process.host = \"$1\"")
 

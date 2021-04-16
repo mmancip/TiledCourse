@@ -1,9 +1,9 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 StudentFileName="./students.list"
 
 audioOff() {
-	for id in $(/searchSourceId $1)
+	for id in $(TiledCourse/webrtcconnect/DockerHub/script/searchSourceId.sh $1)
 	do
 		pactl set-source-output-mute $id 1
 	done

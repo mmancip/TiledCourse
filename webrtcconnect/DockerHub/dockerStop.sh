@@ -17,5 +17,5 @@ then
 	i=1
 
 else
-	echo "Usage: ${0} StudentFileName "
+	echo "Usage: ${0} StudentFileName HostFile"
 fi

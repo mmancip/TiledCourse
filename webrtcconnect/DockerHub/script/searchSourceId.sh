@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 res=$(pactl list source-outputs | grep -i -B23 "application.process.host = \"$1\"")
 
