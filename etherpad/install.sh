@@ -19,4 +19,4 @@ echo $APIKEY  |tee -a $LOGFILE
 export DATE=$(date +%F_%H-%M-%S)
 mkdir EtherpadEnv_${DATE}
 #virtualenv-3.5 EtherpadEnv_${DATE}
-virtualenv3 EtherpadEnv_${DATE} && source EtherpadEnv_${DATE}/bin/activate && pip3 install -r requirements.txt
+python3 -m venv EtherpadEnv_${DATE} && source EtherpadEnv_${DATE}/bin/activate && pip3 install -r requirements.txt
