@@ -160,9 +160,6 @@ try:
     send_file_server(client,TileSet,".", "list_hostsgpu", JOBPath)
     send_file_server(client,TileSet,"TiledCourse/webrtcconnect/", NOM_FICHIER_ETUDIANT_GENERE, JOBPath)
 
-    #TODO : insert in webrtcconnect
-    send_file_server(client,TileSet,".", "launch_sound.sh", JOBPath)
-    
 except:
     print("Error sending files !")
     traceback.print_exc(file=sys.stdout)
@@ -178,12 +175,7 @@ print("Out of git clone TiledCourse : "+ str(client.get_OK()))
 
 COMMAND_copy=LaunchTS+"cp -r TiledCourse/webrtcconnect/DockerHub/dockerRunHub.sh "+\
                "TiledCourse/webrtcconnect/DockerHub/dockerStop.sh "+\
-               "TiledCourse/webrtcconnect/launch_obs.sh "+\
-               "TiledCourse/webrtcconnect/get_DISPLAY.sh "+\
-               "TiledCourse/webrtcconnect/obs "+\
                "./"
-#TODO : insert in webrtcconnect
-#"TiledCourse/webrtcconnect/launch_sound.sh"+\
 
 client.send_server(COMMAND_copy)
 print("Out of copy scripts from TiledCourse : "+ str(client.get_OK()))
@@ -195,7 +187,7 @@ network="classroom"+IdClassroom
 # "X" for no swarm !
 domain="11.0.0"
 
-# Client for teacher must be the Frontend (in site_config.ini) from TVConnection (detect Frontend IP ?)
+# Client for teacher must be the HTTP_FRONTEND (in site_config.ini) from TVConnection (detect Frontend IP ?)
 CLIENT=HTTP_FRONTEND+":"+HTTP_IP
 HUBName='HUB-CR'+IdClassroom 
 
@@ -211,6 +203,8 @@ ExecuteTSHUB='execute TS='+TileSetHUB+" "
 # Launch a command on the frontend
 LaunchTSHUB='launch TS='+TileSetHUB+" "+JOBPath+' '
 
+HTTP=HTTP_LOGIN+"@"+HTTP_IP
+ExecuteHTTP=ExecuteTSHUB+" ssh "+HTTP
 
 def Run_Hub():
     # DEBUG : don't delete Hub on exit
@@ -221,7 +215,7 @@ def Run_Hub():
     COMMAND=LaunchTSHUB+' ./dockerRunHub.sh '+\
         NOM_FICHIER_ETUDIANT_GENERE+' '+\
         RTMPPORT+' '+SERVER_JITSI+' '+VideoDeviceNumber+' '+\
-        GPU_FILE+" "+network+" "+domain+" "+init_IP+" "+CLIENT+" TileSetPort "+HTTP_FRONTEND+" "+DOCKER_NAME+" "+DATE
+        GPU_FILE+" "+network+" "+domain+" "+init_IP+" "+CLIENT+" TileSetPort "+Frontend+" "+DOCKER_NAME+" "+DATE
 
     print("\nCommand RunHub : "+COMMAND)
     client.send_server(COMMAND)
@@ -231,42 +225,52 @@ def Run_Hub():
     global HUB_Host
     with open("list_hostsgpu","r") as hostfile :
         HUB_Host=hostfile.readline().split(" ")[0]
-        close(hostfile)
+        hostfile.close()
         
     global DOCKER_HUB
     DOCKER_HUB='ssh '+HUB_Host+' docker'
     
+    # ID est une clé pour le HHTP_IP
+    # Hors dans TVConnection.py, la clé est pour la Frontend
+    #                cmdgen="ssh-keygen -b 1024 -t rsa -N '' -f /home/"+user+"/.ssh/id_rsa_"+Frontend
+    # Donc ça va pas.
+    # L'idée ne serait pas de créer la clé depuis le HUB avec les mêmes commandes
+    # et de copier cette clé dans le HTTP_IP? bof...
+    
     # Copy ssh key to frontend from connection to HUB :
+    # try:
+    # send_file_server(client,TileSetHUB,".ssh", ID, JOBPath)
+    # send_file_server(client,TileSetHUB,".ssh", ID+".pub", JOBPath)
 
-    send_file_server(client,TileSetHUB,".ssh", ID, JOBPath)
-    send_file_server(client,TileSetHUB,".ssh", ID+".pub", JOBPath)
-
-    COMMAND=LaunchTSHUB+' chmod 400 '+ID
-    client.send_server(COMMAND)
-    print("Out of chmod key : "+ str(client.get_OK()))
-
-    COMMAND=LaunchTSHUB+' scp -p '+ID+'* '+HUB_Host+":/tmp"
-    client.send_server(COMMAND)
-    print("Out of send key : "+ str(client.get_OK()))
-
-    # COMMAND=LaunchTSHUB+' ssh '+HUB_Host+' chmod 400 /tmp/'+ID
+    # COMMAND=LaunchTSHUB+' chmod 400 '+ID
     # client.send_server(COMMAND)
-    # print("Out of chmod key on Hub : "+ str(client.get_OK()))
+    # print("Out of chmod key : "+ str(client.get_OK()))
+
+    # COMMAND=LaunchTSHUB+' scp -p '+ID+'* '+HUB_Host+":/tmp"
+    # client.send_server(COMMAND)
+    # print("Out of send key : "+ str(client.get_OK()))
+
+    # # COMMAND=LaunchTSHUB+' ssh '+HUB_Host+' chmod 400 /tmp/'+ID
+    # # client.send_server(COMMAND)
+    # # print("Out of chmod key on Hub : "+ str(client.get_OK()))
+    # # sys.stdout.flush()
+
+    # COMMAND=LaunchTSHUB+' '+DOCKER_HUB+' cp -a /tmp/'+ID+' '+HUBName+':/home/myuser/.ssh/'
+    # client.send_server(COMMAND)
+    # print("Out of put key on Hub : "+ str(client.get_OK()))
     # sys.stdout.flush()
 
-    COMMAND=LaunchTSHUB+' '+DOCKER_HUB+' cp -a /tmp/'+ID+' '+HUBName+':/home/myuser/.ssh/'
-    client.send_server(COMMAND)
-    print("Out of put key on Hub : "+ str(client.get_OK()))
-    sys.stdout.flush()
+    # COMMAND=LaunchTSHUB+' '+DOCKER_HUB+' cp -a /tmp/'+ID+'.pub '+HUBName+':/home/myuser/.ssh/'
+    # client.send_server(COMMAND)
+    # print("Out of put pub key on Hub : "+ str(client.get_OK()))
 
-    COMMAND=LaunchTSHUB+' '+DOCKER_HUB+' cp -a /tmp/'+ID+'.pub '+HUBName+':/home/myuser/.ssh/'
-    client.send_server(COMMAND)
-    print("Out of put pub key on Hub : "+ str(client.get_OK()))
-
-    COMMAND=LaunchTSHUB+' bash -c " rm -f '+ID+'* ; ssh '+HUB_Host+" rm -f /tmp/"+ID+'* "'
-    client.send_server(COMMAND)
-    print("Out of rm key : "+ str(client.get_OK()))
-    sys.stdout.flush()
+    # COMMAND=LaunchTSHUB+' bash -c " rm -f '+ID+'* ; ssh '+HUB_Host+" rm -f /tmp/"+ID+'* "'
+    # client.send_server(COMMAND)
+    # print("Out of rm key : "+ str(client.get_OK()))
+    # sys.stdout.flush()
+    # except Exception as err:
+    #     traceback.print_exc(file=sys.stderr)
+    #     print("Error ssh ID %s for HTTP %s : %s" % (ID,HTTP_IP,err))
 
     # client.send_server(ExecuteTSHUB+' chmod 400 /home/myuser/.ssh/'+ID)
     # print("Out of chmod "+ID+" : "+ str(client.get_OK()))
@@ -280,6 +284,30 @@ def Run_Hub():
     # client.send_server(COMMAND)
     # print("Out of chmod key on Hub : "+ str(client.get_OK()))
 
+    #TODO:
+    #suppress HTTP_FRONTEND suffix in DockerHub/build_files/launch_sound.sh
+
+    COMMAND=ExecuteTSHUB+' cp -a /home/myuser/.ssh/id_rsa /home/myuser/.ssh/'+ID
+    client.send_server(COMMAND)
+    print("Out of copy key on Hub : "+ str(client.get_OK()))
+    sys.stdout.flush()
+    #LaunchTSHUB+' '+DOCKER_HUB+' exec -u myuser '+HUBName
+        
+    COMMAND=ExecuteTSHUB+' cp -a /home/myuser/.ssh/id_rsa.pub /home/myuser/.ssh/'+ID+'.pub'
+    client.send_server(COMMAND)
+    print("Out of copy key on Hub : "+ str(client.get_OK()))
+    sys.stdout.flush()
+
+    COMMAND_TiledCourse=ExecuteTSHUB+COMMAND_GIT
+    client.send_server(COMMAND_TiledCourse)
+    print("Out of git clone TiledCourse in HUB : "+ str(client.get_OK()))
+
+    COMMAND_SEND_HTTP=ExecuteTSHUB+" bash -c 'scp -rpf TiledCourse/webrtcconnect/get_DISPLAY.sh "+\
+                     "TiledCourse/webrtcconnect/launch_obs.sh "+\
+                     "TiledCourse/webrtcconnect/obs "+HTTP+":$HOME/tmp; "
+    client.send_server(COMMAND_SEND_HTTP)
+    print("Out of send TiledCourse files on HTTP_FRONTEND : "+ str(client.get_OK()))
+
 Run_Hub()
 
 IP_Hub=domain+"."+str(int(init_IP)-1)
@@ -287,6 +315,16 @@ IP_Hub=domain+"."+str(int(init_IP)-1)
 sys.stdout.flush()
 
 def Kill_Hub():
+    global pactl_call
+    COMMAND=ExecuteHTTP+' killall obs'
+    client.send_server(COMMAND)
+    print("Out of kill obs : "+ str(client.get_OK()))
+    
+    # Exit sound :
+    COMMAND=ExecuteTSHUB+' for id in $('+pactl_call+' list modules | grep -B1 "null-sink\|loopback" | grep -o "[0-9]*"); do '+pactl_call+' unload-module $id &> /dev/null ; done' 
+    client.send_server(COMMAND)
+    print("Out of unload sound : "+ str(client.get_OK()))
+
     COMMAND=LaunchTSHUB+' ./dockerStop.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+GPU_FILE
 
     print("\nCommand stop Hub : "+COMMAND)
@@ -368,14 +406,20 @@ def launch_vnc():
 launch_vnc()
 
 pactl_call=""
-# pactl_call is not defined after launch_sound!!
-def launch_sound():
+dev_source="alsa_input.pci-0000_00_1b.0.analog-stereo"
+dev_sink="alsa_output.pci-0000_00_1b.0.analog-stereo"
 
-    # Get pulseaudio socket on frontend :
-    COMMAND=LaunchTSHUB+'pgrep pulseaudio &&  /sbin/lsof -c pulseaudio  2>/dev/null |grep "/native" '+\
+def launch_sound():
+    global pactl_call, dev_source, dev_sink
+    
+    # Get pulseaudio socket on HTTP_FRONTEND through DockerHub :
+    COMMAND=ExecuteHTTP+' bash -c "pgrep pulseaudio &&  /sbin/lsof -c pulseaudio  2>/dev/null" |grep "/native" '+\
         '| tail -1 | sed -e "s&.* \([a-zA-Z0-9_/]*/native\) .*&\\1&" |tee -a out_native'
     client.send_server(COMMAND)
     print("Out of socket native detection : "+ str(client.get_OK()))
+    client.send_server(ExecuteTSHUB+
+                       'bash -c "scp  out_native '+UserFront+'@'+Frontend+':'+JOBPath+'/"')
+    print("Out of scp out_native : " + str(client.get_OK()))
 
     get_file_client(client,TileSet,JOBPath,"out_native",".")
     with open("out_native","r") as native :
@@ -384,25 +428,71 @@ def launch_sound():
         pulsedir=pulsesocket.replace("pulse/native","")
         print("pulsedir : "+pulsedir)
         
-    global pactl_call
     pactl_call='XDG_RUNTIME_DIR='+pulsedir+' pactl'
     
-    # Add pulseaudio tunnel on Hub to frontend:
+    # Add pulseaudio tunnel on Hub to HTTP_FRONTEND :
     client.send_server(ExecuteTSHUB+' /opt/launch_sound.sh '+pulsesocket+' '+HTTP_IP+' '+HTTP_LOGIN)
     print("Out of launch_sound HUB : "+ str(client.get_OK()))
 
-    # Add sound modules on TSHUB frontend:
-    COMMAND=LaunchTSHUB+' chmod u+x launch_sound.sh'
-    client.send_server(COMMAND)
-    print("Out of chmod launch_sound.sh : "+ str(client.get_OK()))
-    client.send_server(LaunchTSHUB+' XDG_RUNTIME_DIR='+pulsedir+' ./launch_sound.sh')
-    print("Out of launch_sound HUB : "+ str(client.get_OK()))
+    # detect default source/sink
+    client.send_server(ExecuteTSHUB+'bash -c "'+pactl_call+' info | sed -En \'s/Default Sink: (.*)/\\1/p\' > out_default_sink"')
+    print("Out of info sink :"+str(client.get_OK()))
+    client.send_server(ExecuteTSHUB+'bash -c "scp  out_default_sink '+UserFront+'@'+Frontend+':'+JOBPath+'/"')
+    print("Out of scp out_default_sink : " + str(client.get_OK()))
+
+    client.send_server(ExecuteTSHUB+'bash -c "'+pactl_call+' info | sed -En \'s/Default Source: (.*)/\\1/p\' > out_default_source"')
+    print("Out of info source :"+str(client.get_OK()))
+    client.send_server(ExecuteTSHUB+'bash -c "scp  out_default_source '+UserFront+'@'+Frontend+':'+JOBPath+'/"')
+    print("Out of scp out_default_source : " + str(client.get_OK()))
+    
+    get_file_client(client,TileSet,JOBPath,"out_default_sink",".")
+    get_file_client(client,TileSet,JOBPath,"out_default_source",".")
+    
+    with open("out_default_source","r") as fsource :
+        dev_source=fsource.readline().replace('\n','')
+        print("dev_source : "+dev_source)
+        fsource.close()
+    
+    with open("out_default_sink","r") as fsink :
+        dev_sink=fsink.readline().replace('\n','')
+        print("dev_sink : "+dev_sink)
+        fsink.close()
+
+    # Add sound modules on pulseaudio of HTTP_FRONTEND :
+
+    # COMMAND=LaunchTSHUB+' chmod u+x launch_sound.sh'
+    # client.send_server(COMMAND)
+    # print("Out of chmod launch_sound.sh : "+ str(client.get_OK()))
+    # client.send_server(LaunchTSHUB+' XDG_RUNTIME_DIR='+pulsedir+' ./launch_sound.sh')
+    # print("Out of launch_sound HUB : "+ str(client.get_OK()))
+
+    client.send_server(ExecuteTSHUB+'bash -c "'+pactl_call+
+                       ' load-module module-null-sink sink_name=stu_source sink_properties=device.description="stu_source"')
+    print("Out of load-module source :"+str(client.get_OK()))
+
+    client.send_server(ExecuteTSHUB+'bash -c "'+pactl_call+
+                       ' load-module module-null-sink sink_name=stu_sink sink_properties=device.description="stu_sink"')
+    print("Out of load-module sink :"+str(client.get_OK()))
+
+    time.sleep(2)
+    client.send_server(ExecuteTSHUB+'bash -c "'+pactl_call+
+                       ' load-module module-loopback source=stu_source.monitor sink='+dev_sink)
+    print("Out of load-module loopback source :"+str(client.get_OK()))
+
+    client.send_server(ExecuteTSHUB+'bash -c "'+pactl_call+
+                       ' load-module module-loopback source=stu_source.monitor sink=stu_sink')
+    print("Out of load-module loopback :"+str(client.get_OK()))
+
+    client.send_server(ExecuteTSHUB+'bash -c "'+pactl_call+
+                       ' load-module module-loopback source'+dev_source+' sink=stu_sink')
+    print("Out of load-module loopback sink :"+str(client.get_OK()))
+    
     # Pulse VM :
     COMMAND_Pulse="ssh -4 -fNT -i .ssh/id_rsa_hub -L4000:localhost:4000 "+IP_Hub+" &"
     CommandTS=ExecuteTS+" "+COMMAND_Pulse
     client.send_server(CommandTS)
     print("Out of ssh Hub : "+ str(client.get_OK()))
-
+    
     # All pulseaudio in container listen to 4000
     client.send_server(ExecuteTS+' /opt/launch_sound.sh')
     print("Out of launch_sound VM : "+ str(client.get_OK()))
@@ -410,20 +500,51 @@ def launch_sound():
     # print("Out of kill pulseaudio VM : "+ str(client.get_OK()))
     sys.stdout.flush()
 
+    for i in range(NUM_DOCKERS):
+        i0="%0.3d" % (i+1)
+        VM=containerId(i+1)
+        client.send_server(ExecuteTSHUB+'bash -c "'+pactl_call+
+                        ' load-module module-null-sink sink_name=stu_source'+VM+' sink_properties=device.description="stu_source"'+VM)
+        print("Out of load-module source"+VM+" :"+str(client.get_OK()))
+            
+        client.send_server(ExecuteTSHUB+'bash -c "'+pactl_call+
+                           ' load-module module-null-sink sink_name=stu_sink+'+VM+' sink_properties=device.description="stu_sink"'+VM)
+        print("Out of load-module sink :"+str(client.get_OK()))
 
+        # time.sleep(2)
+        # client.send_server(ExecuteTSHUB+'bash -c "'+pactl_call+
+        #                    ' load-module module-loopback source=stu_source.monitor sink='+dev_sink)
+        # print("Out of load-module loopback source :"+str(client.get_OK()))
+        
+        # client.send_server(ExecuteTSHUB+'bash -c "'+pactl_call+
+        #                    ' load-module module-loopback source=stu_source.monitor sink=stu_sink')
+        # print("Out of load-module loopback :"+str(client.get_OK()))
+
+        # client.send_server(ExecuteTSHUB+'bash -c "'+pactl_call+
+        #                    ' load-module module-loopback source'+dev_source+' sink=stu_sink')
+        # print("Out of load-module loopback sink :"+str(client.get_OK()))
+
+
+#TODO : obs on HTTP_FRONTEND !!!
 # Launch OBS on the frontend
 def launch_OBS():
 
-    COMMAND_DISPLAY=LaunchTSHUB+"./get_DISPLAY.sh"
+    COMMAND_DISPLAY=ExecuteHTTP+" bash -c ' cd tmp; ./get_DISPLAY.sh; ls -la out_DISPLAY '" 
     client.send_server(COMMAND_DISPLAY)
     print("Out of get DISPLAY for user : "+ str(client.get_OK()))
 
-    COMMAND_OBS=LaunchTSHUB+"./launch_obs.sh "+HTTP_FRONTEND+" "+RTMPPORT+" "+IdClassroom+" &"
+    # client.send_server(ExecuteTSHUB+
+    #                    'bash -c "scp out_DISPLAY '+UserFront+'@'+Frontend+':'+JOBPath+'/"')
+    # print("Out of scp out_DISPLAY : " + str(client.get_OK()))
+    #get_file_client(client,TileSet,JOBPath,"out_DISPLAY",".")
+
+    COMMAND_OBS=ExecuteHTTP+" bash -c ' cd tmp; ./launch_obs.sh "+HTTP_FRONTEND+" "+RTMPPORT+" "+IdClassroom+" & '" 
     client.send_server(COMMAND_OBS)
     print("Out of execute OBS for user : "+ str(client.get_OK()))
 
     time.sleep(3)
-    
+
+    #TODO : how to force only one ffmpeg by node (cf mageiawebrtc/command_ffmpeg)
     COMMAND_ffmpeg=" /opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" "+IP_Hub+" &"
     with open(FILEPATH) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=';')
@@ -440,8 +561,8 @@ def launch_OBS():
 # Launch google-chrome
 def launch_chrome():
     global pactl_call
-    COMMAND_CHROME="/opt/command_chrome "+' '+SERVER_JITSI+' '+TeacherFirstname+'_'+TeacherLastname+' '+TeacherEmail
-    client.send_server(LaunchTSHUB+' nohup bash -c "'+pactl_call+' list > out_sound_0" </dev/null > /dev/null 2>&1 &')
+    COMMAND_CHROME="bash -c "+pactl_call+"' set-default-sink ;"+pactl_call+"' set-default-source ; /opt/command_chrome "+' '+SERVER_JITSI+' '+TeacherFirstname+'_'+TeacherLastname+' '+TeacherEmail
+    client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' list > out_sound_0" </dev/null > /dev/null 2>&1 &')
     client.get_OK()
     time.sleep(0.5)
     with open(FILEPATH) as csv_file:
@@ -453,7 +574,9 @@ def launch_chrome():
             #UserName=row[0]
             #mail=row[1]
             roomName=row[2]
-            TilesStr=' Tiles=('+containerId(count_lines)+') '
+            VM=containerId(count_lines)
+            TilesStr=' Tiles=('+VM+') '
+
             COMMAND_CHROMEi=COMMAND_CHROME+" "+roomName+" &"
             print("%d Chrome command : %s" % (count_lines,COMMAND_CHROMEi))
             CommandTS=ExecuteTS+TilesStr+COMMAND_CHROMEi
@@ -462,6 +585,19 @@ def launch_chrome():
             client.send_server(LaunchTSHUB+' nohup bash -c "'+pactl_call+' list > out_sound_'+str(count_lines)+'" </dev/null > /dev/null 2>&1  &')
             client.get_OK()
     
+            # time.sleep(2)
+            # client.send_server(ExecuteTS+TilesStr+'bash -c "'+pactl_call+
+            #                    ' load-module module-loopback source=stu_source.monitor sink='+dev_sink)
+            # print("Out of load-module loopback source :"+str(client.get_OK()))
+        
+            # client.send_server(ExecuteTS+TilesStr+'bash -c "'+pactl_call+
+            #                    ' load-module module-loopback source=stu_source.monitor sink=stu_sink')
+            # print("Out of load-module loopback :"+str(client.get_OK()))
+            
+            # client.send_server(ExecuteTS+TilesStr+'bash -c "'+pactl_call+
+            #                    ' load-module module-loopback source'+dev_source+' sink=stu_sink')
+            # print("Out of load-module loopback sink :"+str(client.get_OK()))
+
     sys.stdout.flush()
     time.sleep(10)
     launch_mute()
@@ -471,36 +607,34 @@ def searchSink(VM):
         'thissink=\\\$( TiledCourse/webrtcconnect/DockerHub/script/searchSinkId.sh '+VM+');'+\
         'echo \\\$thissink |tee -a lastsink" </dev/null'
     #thissink=\\\"\\\"; while X\\\$thissink=X; do  done; exit
-    client.send_server(LaunchTSHUB+COMMANDsink)
-    return client.get_OK()
+    client.send_server(ExecuteTSHUB+COMMANDsink)
+    print("searchSink : ",client.get_OK())
 
 def searchSource(VM):
     COMMANDsource=' bash -c " TiledCourse/webrtcconnect/DockerHub/script/searchSourceId.sh '+VM+';'+\
         'thissource=\\\$( TiledCourse/webrtcconnect/DockerHub/script/searchSourceId.sh '+VM+');'+\
         ' echo \\\$thissource |tee -a lastsource" </dev/null'
     #thissource=\\\"\\\"; while X\\\$thissource=X; do  done; exit
-    client.send_server(LaunchTSHUB+COMMANDsource)
-    return client.get_OK()
+    client.send_server(ExecuteTSHUB+COMMANDsource)
+    print("searchSource : ",client.get_OK())
 
-dev_source="alsa_input.pci-0000_00_1b.0.analog-stereo"
-dev_sink="alsa_output.pci-0000_00_1b.0.analog-stereo"
 def launch_mute():
     global pactl_call, dev_source, dev_sink
     print("Mute.")
     COMMANDreplace='find TiledCourse/webrtcconnect/DockerHub/script/ -name "*.sh" '+\
         ' -exec bash -c \' sed -e "s&pactl&'+pactl_call+'&" -i {} \'\\; '
     print(COMMANDreplace)
-    client.send_server(LaunchTSHUB+COMMANDreplace)
+    client.send_server(ExecuteTSHUB+COMMANDreplace)
     print("replace pactl : "+str(client.get_OK()))
     
     for i in range(NUM_STUDENTS):
         VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (i+1)
-        #client.send_server(LaunchTSHUB+' TiledCourse/webrtcconnect/DockerHub/script/muteAll.sh '+VM_NAME)
+        #client.send_server(ExecuteTSHUB+' TiledCourse/webrtcconnect/DockerHub/script/muteAll.sh '+VM_NAME)
         #client.get_OK()
         sinkid=searchSink(VM_NAME)
         sourceid=searchSource(VM_NAME)
         print("VM %s : sinkId %d sourceId %d" % (VM_NAME,sinkid,sourceid))
-        client.send_server(LaunchTSHUB+'bash -c "'+
+        client.send_server(ExecuteTSHUB+'bash -c "'+
                            pactl_call+' move-source-output '+str(sourceid)+' \"alsa_input.pci-0000_00_1b.0.analog-stereo\"; '+
                            pactl_call+' move-sink-input '+str(sinkid)+' \"alsa_output.pci-0000_00_1b.0.analog-stereo\"; '+
                            pactl_call+' set-sink-input-mute '+str(sinkid)+' 1; '+
@@ -510,39 +644,13 @@ def launch_mute():
     time.sleep(3)
     register()
     
-    client.send_server(LaunchTSHUB+'bash -c "'+pactl_call+' info | sed -En \'s/Default Sink: (.*)/\\1/p\' > out_default_sink"')
-    print("Out of info sink :"+str(client.get_OK()))
-    client.send_server(LaunchTSHUB+'bash -c "'+pactl_call+' info | sed -En \'s/Default Source: (.*)/\\1/p\' > out_default_source"')
-    print("Out of info source :"+str(client.get_OK()))
-    
-    get_file_client(client,TileSet,JOBPath,"out_default_sink",".")
-    get_file_client(client,TileSet,JOBPath,"out_default_source",".")
-    
-    with open("out_default_source","r") as fsource :
-        dev_source=fsource.readline().replace('\n','')
-        print("dev_source : "+dev_source)
-        fsource.close()
-    
-    with open("out_default_sink","r") as fsink :
-        dev_sink=fsink.readline().replace('\n','')
-        print("dev_sink : "+dev_sink)
-        fsink.close()
-
-    # pactl load-module module-null-sink sink_name=stu_source sink_properties=device.description="stu_source" &> /dev/null
-    # pactl load-module module-null-sink sink_name=stu_sink sink_properties=device.description="stu_sink" &> /dev/null
-
-    # sleep 2
-    # pactl load-module module-loopback source=stu_source.monitor sink=${dev_sink} &> /dev/null
-    # pactl load-module module-loopback source=stu_source.monitor sink=stu_sink &> /dev/null
-    # pactl load-module module-loopback source=${dev_source} sink=stu_sink &> /dev/null
-
 
 sinkIds=[]
 sourceIds=[]
 def register():
     global sinkIds,sourceIds
 
-    client.send_server(LaunchTSHUB+' nohup bash -c "rm list_s*; touch list_sink; touch list_source" </dev/null > /dev/null 2>&1  &' )
+    client.send_server(ExecuteTSHUB+' nohup bash -c "rm list_s*; touch list_sink; touch list_source" </dev/null > /dev/null 2>&1  &' )
     client.get_OK()
 
     for i in range(NUM_STUDENTS):
@@ -579,17 +687,17 @@ def register():
         
 def get_all_sinks():
     global pactl_call
-    client.send_server(LaunchTSHUB+' nohup bash -c "'+pactl_call+' list sink-inputs > out_all_sinks" </dev/null > /dev/null 2>&1  &')
+    client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' list sink-inputs > out_all_sinks" </dev/null > /dev/null 2>&1  &')
     client.get_OK()
-    client.send_server(LaunchTSHUB+' nohup bash -c "'+pactl_call+' list sink-inputs | grep -i -B23 application.process.host > out_sinks" </dev/null > /dev/null 2>&1 &')
+    client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' list sink-inputs | grep -i -B23 application.process.host > out_sinks" </dev/null > /dev/null 2>&1 &')
     client.get_OK()
 
 
 def get_all_sources():
     global pactl_call
-    client.send_server(LaunchTSHUB+' nohup bash -c "'+pactl_call+' list source-outputs > out_all_sources" </dev/null > /dev/null 2>&1 &')
+    client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' list source-outputs > out_all_sources" </dev/null > /dev/null 2>&1 &')
     client.get_OK()
-    client.send_server(LaunchTSHUB+' nohup bash -c "'+pactl_call+' list source-outputs | grep -i -B23 application.process.host > out_sources" </dev/null > /dev/null 2>&1 &')
+    client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' list source-outputs | grep -i -B23 application.process.host > out_sources" </dev/null > /dev/null 2>&1 &')
     client.get_OK()
 
 
@@ -601,7 +709,7 @@ def open_sound(tileNum=-1,tileId='001'):
     else:
         VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (int(tileId))
         id=int(tileId)
-    client.send_server(LaunchTSHUB+' '+pactl_call+' set-sink-input-mute '+sinkIds[id]+' 1')
+    client.send_server(ExecuteTSHUB+' '+pactl_call+' set-sink-input-mute '+str(sinkIds[id])+' 1')
     client.get_OK()
 
 def hear_this_one(tileNum=-1,tileId='001'):
@@ -615,17 +723,17 @@ def hear_this_one(tileNum=-1,tileId='001'):
     for i in range(NUM_STUDENTS):
         VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (i+1)
         if (i+1 == id):
-            client.send_server(LaunchTSHUB+' nohup bash -c "'+pactl_call+' move-source-output '+sinkIds[id]+' \"stu_sink.monitor\"')
+            client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' move-source-output '+sinkIds[id]+' \"stu_sink.monitor\"')
             client.get_OK()
-            client.send_server(LaunchTSHUB+' nohup bash -c "'+pactl_call+' move-sink-input '+sinkIds[id]+' \"alsa_output.pci-0000_00_1b.0.analog-stereo\"')
+            client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' move-sink-input '+sinkIds[id]+' \"alsa_output.pci-0000_00_1b.0.analog-stereo\"')
             client.get_OK()
         else:
-            client.send_server(LaunchTSHUB+' nohup bash -c "'+pactl_call+' move-source-output '+sinkIds[id]+' \"alsa_input.pci-0000_00_1b.0.analog-stereo\"')
+            client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' move-source-output '+sinkIds[id]+' \"alsa_input.pci-0000_00_1b.0.analog-stereo\"')
             client.get_OK()
-            client.send_server(LaunchTSHUB+' nohup bash -c "'+pactl_call+' move-sink-input '+sinkIds[id]+' \"stu_source\"')
+            client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' move-sink-input '+sinkIds[id]+' \"stu_source\"')
             client.get_OK()
 
-    client.send_server(LaunchTSHUB+' '+pactl_call+' set-sink-input-mute '+sinkIds[id]+' 0')
+    client.send_server(ExecuteTSHUB+' '+pactl_call+' set-sink-input-mute '+sinkIds[id]+' 0')
     client.get_OK()
     
 def close_sound(tileNum=-1,tileId='001'):
@@ -633,7 +741,7 @@ def close_sound(tileNum=-1,tileId='001'):
         VM_NAME=DOCKER_NAME+"_"+DATE+"_"+str(tileNum+1)
     else:
         VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (int(tileId))
-    client.send_server(LaunchTSHUB+' TiledCourse/webrtcconnect/DockerHub/script/muteAll.sh '+VM_NAME)
+    client.send_server(ExecuteTSHUB+' TiledCourse/webrtcconnect/DockerHub/script/muteAll.sh '+VM_NAME)
     #pactl set-sink-input-mute $id 0
     client.get_OK()
     # client.send_server(ExecuteTSHUB+' '+pactl_call+' set-source-output-mute '+VM_NAME+' 1')
@@ -663,15 +771,6 @@ def close_sound(tileNum=-1,tileId='001'):
             
             
 def kill_all_containers():
-    global pactl_call
-    COMMAND=LaunchTSHUB+' killall obs'
-    client.send_server(COMMAND)
-    print("Out of kill obs : "+ str(client.get_OK()))
-    
-    # Exit sound :
-    COMMAND=LaunchTSHUB+' for id in $('+pactl_call+' list modules | grep -B1 "null-sink\|loopback" | grep -o "[0-9]*"); do '+pactl_call+' unload-module $id &> /dev/null ; done' 
-    client.send_server(COMMAND)
-    print("Out of unload sound : "+ str(client.get_OK()))
     
     client.send_server(ExecuteTS+' killall Xvnc')
     print("Out of killall command : "+ str(client.get_OK()))
