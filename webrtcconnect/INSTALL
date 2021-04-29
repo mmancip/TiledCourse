@@ -1,12 +1,15 @@
+The HTTP_FRONTEND is the teacher machine or a linux VM inside Windows teacher
+machine (accessible).
+You will need OBS and lsof on the HTTP_FRONTEND and a browser on the teacher machine.
 
-You will need OBS and lsof on the frontend.
+The frontend is a host that can run docker.
 And docker > 18.03 on the frontend and cluster for webRTC containers.
 
 If you use Windows for the teacher :
      You will need a linux VM with your camera and sound devices exported inside
-     => You will have to use this VM as the Frontend in case_config.ini file.
+     => You will have to use this VM as the HTTP_FRONTEND in case_config.ini file.
 
-in TiledViz : (see TiledViz doc for ssh keys on the frontend) 
+in TiledViz : (see TiledViz doc for ssh keys on the HTTP_FRONTEND) 
 docker build -t mageianvidia:7 -f TVConnections/mageianvidia/Dockerfile7 .
 
 in DockerHub :
