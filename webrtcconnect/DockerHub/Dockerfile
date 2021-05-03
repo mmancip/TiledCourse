@@ -72,9 +72,6 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
 RUN mkdir -p /home/myuser
 #RUN adduser --disabled-password --gecos "My User" --uid 1000 myuser
 
-COPY $DOCKER_PATH/build_files/ssh /home/myuser/.ssh
-#RUN chown -R myuser:myuser /home/myuser/.ssh
-
 
 ENV ID_CLASSROOM -1
 ENV JITSI_SERVER -1
