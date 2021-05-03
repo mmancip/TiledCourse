@@ -39,7 +39,7 @@ if [ ! -n $DISPLAY ]; then
     export DISPLAY=:0.0
 fi
 export LOGvnc=${VNCDIR}/vnc-server_${DATE}_$$
-x11vnc -display $DISPLAY -forever -noncache -noxdamage  -tightfilexfer -rfbauth ${VNCDIR}/passvnc -cursor -arrow -listen=localhost -shared > ${LOGvnc} 2>&1 &
+x11vnc -display $DISPLAY -forever -noncache -noxdamage  -tightfilexfer -rfbauth ${VNCDIR}/passvnc -cursor -arrow -listen=localhost -safer -shared > ${LOGvnc} 2>&1 &
 
 echo "detect x11vnc :" |tee -a $LOGFILE
 ivnc=0
