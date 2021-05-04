@@ -13,7 +13,10 @@ then
 	realhost=${Hostline% *}
 	 
 	ssh ${realhost} docker stop HUB-CR${IdClassroom}
-
+	DATE=$( ssh ${realhost} docker inspect HUB-CR${IdClassroom} |grep DATE= |sed -e 's&.*DATE=&&' )
+	echo $DATE
+	ssh ${realhost} bash -c "'ls -la /tmp/hub-${DATE}'"
+	ssh ${realhost} bash -c "'[ -d /tmp/hub-${DATE} ] && rm -rf /tmp/hub-${DATE}'"
 	i=1
 
 else
