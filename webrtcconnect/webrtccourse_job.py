@@ -306,7 +306,7 @@ IP_Hub=domain+"."+str(int(init_IP)-1)
 
 sys.stdout.flush()
 
-def launch_pactl_Hub(C):
+def launch_Hub(C):
     outpactl=True
     while (outpactl):
         time.sleep(1)
@@ -318,24 +318,32 @@ def launch_pactl_Hub(C):
     
 def wakeup():
     # Wait for server to start pactl access to Hub
-    launch_pactl_Hub("pactl info > /dev/null")
+    launch_Hub("pactl info > /dev/null")
     
 def Kill_Hub():
-    global pactl_call
     COMMAND=ExecuteHTTP+' killall obs'
     client.send_server(COMMAND)
     print("Out of kill obs : "+ str(client.get_OK()))
 
-    wakeup()
+    #wakeup()
     # Exit sound :
-    COMMAND=ExecuteTSHUB+' bash -c "export List_open=\$(pactl list modules | grep -B1 \"null-sink\\|loopback\" '+\
-             '| grep -o \"[0-9]*\"); echo \${List_open[*]} > list_pactl; '+\
-             'for id in \${List_open[*]}; do pactl unload-module \$id &> /dev/null ; done"' 
-    client.send_server(COMMAND)
-    print("Out of unload sound : "+ str(client.get_OK()))
+    # COMMAND=ExecuteTSHUB+' bash -c "export List_open=\$(pactl list modules | grep -B1 \"null-sink\\|loopback\" '+\
+    #          '| grep -o \"[0-9]*\"); echo \${List_open[*]} > list_pactl; '+\
+    #          'for id in \${List_open[*]}; do pactl unload-module \$id &> /dev/null ; done"' 
+    # client.send_server(COMMAND)
+    # print("Out of unload sound : "+ str(client.get_OK()))
 
+    # COMMAND='export List_open=$(pactl list modules | grep -B1 "null-sink\|loopback" '+\
+    #          '| grep -o "[0-9]*"); echo \${List_open[*]} > list_pactl; '+\
+    #          'for id in \${List_open[*]}; do pactl unload-module \$id &> /dev/null ; done'
+    # print("Command unload module : "+COMMAND)
+    # launch_Hub(COMMAND)
+
+    COMMAND_DISPLAY=ExecuteHTTP+" bash -c \"' pulseaudio -k '\"" 
+    client.send_server(COMMAND_DISPLAY)
+    print("Out of restart pulseaudio on HTTP_Frontend : "+ str(client.get_OK()))
+    
     COMMAND=LaunchTSHUB+' ./dockerStop.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+GPU_FILE
-
     print("\nCommand stop Hub : "+COMMAND)
     client.send_server(COMMAND)
 
@@ -458,8 +466,11 @@ def launch_sound():
     client.send_server(ExecuteTSHUB+' /opt/launch_sound.sh '+pulsesocket+' '+HTTP_IP+' '+HTTP_LOGIN)
     print("Out of launch_sound HUB : "+ str(client.get_OK()))
 
+    COMMAND=' scp  \''+HTTP+':\$HOME/.config/pulse/cookie\' .config/pulse/'
+    launch_Hub(COMMAND)
+    
     # detect default source/sink
-    launch_pactl_Hub('pactl info |grep Default > .vnc/out_default')
+    launch_Hub('pactl info |grep Default > .vnc/out_default')
 
     client.send_server(ExecuteTSHUB+'scp .vnc/out_default '+UserFront+'@'+Frontend+':'+JOBPath)
     print("Out of scp out_default : " + str(client.get_OK()))
@@ -486,15 +497,23 @@ def launch_sound():
     # client.send_server(ExecuteTS+' nohup bash -c "killall pulseaudio" </dev/null > /dev/null 2>&1 &')
     # print("Out of kill pulseaudio VM : "+ str(client.get_OK()))
     sys.stdout.flush()
+    
+    COMMAND_cookie='bash -c "scp -i .ssh/id_rsa_hub \''+IP_Hub+':$HOME/.config/pulse/cookie\' .config/pulse/"'
+    if (args.debug):
+        print("COMMAND for scp VM cookie : "+ COMMAND_cookie)
+        sys.stdout.flush()
+    client.send_server(ExecuteTS+COMMAND_cookie)
+    print("Out of scp VM cookie : " + str(client.get_OK()))
+    
 
     # Add sound modules on pulseaudio of HTTP_FRONTEND :
-    launch_pactl_Hub('pactl load-module module-null-sink sink_name=stu_sink'+
+    launch_Hub('pactl load-module module-null-sink sink_name=stu_sink'+
                      ' sink_properties=device.description=\"GlobalSink\" > .vnc/index_stu_sink')
-    launch_pactl_Hub('pactl list short sinks |grep stu_sink >> .vnc/index_stu_sink')
+    launch_Hub('pactl list short sinks |grep stu_sink >> .vnc/index_stu_sink')
 
-    launch_pactl_Hub('pactl load-module module-null-sink sink_name=stu_source'+
+    launch_Hub('pactl load-module module-null-sink sink_name=stu_source'+
                      ' sink_properties=device.description=\"GlobalSource\" > .vnc/index_stu_source')
-    launch_pactl_Hub('pactl list short sinks |grep stu_source >> .vnc/index_stu_source')
+    launch_Hub('pactl list short sinks |grep stu_source >> .vnc/index_stu_source')
 
     COMMAND=ExecuteTSHUB+'scp .vnc/index_stu_* '+UserFront+'@'+Frontend+':'+JOBPath
     if (args.debug):
@@ -526,14 +545,14 @@ def launch_sound():
 
     time.sleep(2)
     # Le son des étudiants sort sur les haut-parleurs du prof
-    launch_pactl_Hub('pactl load-module module-loopback source=stu_source.monitor sink='+dev_sink)
-    # Le son des étudiants va dans les inputs des étudiants
-    launch_pactl_Hub('pactl load-module module-loopback source=stu_source.monitor sink=stu_sink')
+    launch_Hub('pactl load-module module-loopback source=stu_sink.monitor sink='+dev_sink)
     # Son du micro du prof va dans les inputs des étudiants
-    launch_pactl_Hub('pactl load-module module-loopback source='+dev_source+' sink=stu_sink')
+    launch_Hub('pactl load-module module-loopback source='+dev_source+' sink=stu_source')
+    
+    # Le son des étudiants va dans les inputs des étudiants
+    #launch_Hub('pactl load-module module-loopback source=stu_sink.monitor sink=stu_source')
     # Un seul étudiant parle à la fois comme ça son son ne peut pas re-rentrer. 
-    launch_pactl_Hub('pactl set-default-sink stu_sink')
-    launch_pactl_Hub('pactl set-default-source stu_source.monitor')
+    #launch_Hub('pactl set-default-sink stu_sink')
 
     
 def pulse_VMChrome():
@@ -542,12 +561,14 @@ def pulse_VMChrome():
     
     wakeup()
     for i in range(NUM_DOCKERS):
-        i0="%0.3d" % (i+1)
         VM=containerId(i+1)
-        launch_pactl_Hub('pactl load-module module-null-sink sink_name=stu_source'+VM+
-                         ' sink_properties=device.description=\"source'+VM+'\" > .vnc/index_source'+VM)
-        launch_pactl_Hub('pactl load-module module-null-sink sink_name=stu_sink'+VM+
-                         ' sink_properties=device.description=\"sink'+VM+'\" > .vnc/index_sink'+VM)
+        launch_Hub('pactl load-module module-null-sink sink_name=fake_source'+VM+
+                         ' sink_properties=device.description=fake_source'+VM)
+        launch_Hub('pactl load-module module-remap-source master=fake_source'+VM+'.monitor '+
+                         ' source_name=stu_source'+VM+' source_properties=device.description=Virtual_Mic'+VM+
+                         ' > .vnc/index_source'+VM)
+        launch_Hub('pactl load-module module-null-sink sink_name=stu_sink'+VM+
+                         ' sink_properties=device.description=sink'+VM+' > .vnc/index_sink'+VM)
 
         COMMAND=ExecuteTSHUB+'scp .vnc/index_s*'+VM+' '+UserFront+'@'+Frontend+':'+JOBPath
         if (args.debug):
@@ -570,9 +591,10 @@ def pulse_VMChrome():
             print("sinkindex%s : %s" % (VM,siindex))
             sinkVMindex.append(int(siindex))
             fsink.close()
-        
-        launch_pactl_Hub('pactl load-module module-loopback source=stu_sink'+VM+'.monitor sink=stu_source')
-        launch_pactl_Hub('pactl load-module module-loopback source=stu_sink.monitor sink=stu_source'+VM)
+
+        # Connect to global sound
+        launch_Hub('pactl load-module module-loopback source=stu_sink'+VM+'.monitor sink=stu_sink')
+        launch_Hub('pactl load-module module-loopback source=stu_source.monitor sink=fake_source'+VM)
 
         
 # Launch OBS on the frontend
@@ -609,7 +631,6 @@ def launch_OBS():
 
 # Launch google-chrome
 def launch_chrome():
-    global pactl_call
     COMMAND_CHROME="/opt/command_chrome "+' '+SERVER_JITSI+' '+TeacherFirstname+'_'+TeacherLastname+' '+TeacherEmail
     client.send_server(ExecuteTSHUB+' bash -c "pactl list > .vnc/out_sound_0 "')
     #nohup ... </dev/null > /dev/null 2>&1  &
@@ -621,99 +642,74 @@ def launch_chrome():
         count_lines=0
         for row in csv_reader:
             print(", ".join(row))
+            i=count_lines
             count_lines=count_lines+1
             #UserName=row[0]
             #mail=row[1]
             roomName=row[2]
             VM=containerId(count_lines)
-
+            VM_NAME=DOCKER_NAME+"_"+DATE+"_"+VM
+            
             wakeup()
-            launch_pactl_Hub('pactl set-default-sink stu_sink'+VM)
-            launch_pactl_Hub('pactl set-default-source stu_source'+VM+'.monitor')
+            launch_Hub('pactl set-default-sink stu_sink'+VM)
+            launch_Hub('pactl set-default-source stu_source'+VM)
+            time.sleep(1)
+
             TilesStr=' Tiles=('+VM+') '
-            COMMAND_CHROMEi='bash -c "'+'pactl set-default-sink stu_sink'+VM+'; '+COMMAND_CHROME+' '+roomName+' stu_sink'+VM+' &"'
+            COMMAND_CHROMEi=COMMAND_CHROME+' '+roomName+' stu_sink'+VM+' stu_source'+VM
             print("%d Chrome command : %s" % (count_lines,COMMAND_CHROMEi))
             CommandTS=ExecuteTS+TilesStr+COMMAND_CHROMEi
             client.send_server(CommandTS)
             client.get_OK()
+            
             time.sleep(5)
-            wakeup()
+            COMMAND='id=$(pactl list sink-inputs  |grep -i -B23 \"'+VM_NAME+'\" '+\
+                '|head -1 |sed -e \"s/Sink Input #//\"); echo \$id; '+\
+                'pactl move-sink-input \$id stu_sink'+VM+' >> .vnc/out_move_sink'+VM+' 2>&1'
+            launch_Hub(COMMAND)
+
+            COMMAND='id=$(pactl list source-outputs  |grep -i -B23 \"'+VM_NAME+'\" '+\
+                '|head -1 |sed -e \"s/Source Output #//\"); echo \$id; '+\
+                'pactl move-source-output \$id stu_source'+VM+' >> .vnc/out_move_source'+VM+' 2>&1'
+            launch_Hub(COMMAND)
+
+            launch_Hub('pactl set-sink-volume stu_sink'+VM+' 0')
+
             client.send_server(ExecuteTSHUB+' bash -c "pactl list > .vnc/out_sound_'+str(count_lines)+'"')
             #nohup ... </dev/null > /dev/null 2>&1  &
             client.get_OK()
             
-    sys.stdout.flush()
-    #launch_mute()
+            sys.stdout.flush()
 
-    #pactl set-source-output-mute $id 1
-    #audioOnAll
-    #pactl set-source-output-mute $id 0
+def launch_unmute(tileNum=-1,tileId='001'):
+    if ( tileNum > -1 ):
+        i=tileNum
+    else:
+        i=tileId-1
+    VM=containerId(i+1)
+    launch_Hub('pactl set-sink-volume stu_sink'+VM+' 100')
 
-def launch_mute():
-    # global dev_source, dev_sink
-    print("Mute.")
-    # COMMANDreplace='find TiledCourse/webrtcconnect/DockerHub/script/ -name "*.sh" '+\
-    #     ' -exec bash -c \' sed -e "s&pactl&'+pactl_call+'&" -i {} \'\\; '
-    # print(COMMANDreplace)
-    # client.send_server(ExecuteTSHUB+COMMANDreplace)
-    # print("replace pactl : "+str(client.get_OK()))
+def increase_volume(tileNum=-1,tileId='001'):
+    if ( tileNum > -1 ):
+        i=tileNum
+    else:
+        i=tileId-1
+    VM=containerId(i+1)
+    launch_Hub('pactl set-sink-volume stu_sink'+VM+' 100')
     
-    for i in range(NUM_STUDENTS):
-        launch_pactl_Hub('pactl set-sink-volume '+str(sinkVMindex[i])+' 0%')
-        # VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (i+1)
-        # #client.send_server(ExecuteTSHUB+' TiledCourse/webrtcconnect/DockerHub/script/muteAll.sh '+VM_NAME)
-        # #client.get_OK()
-        # sinkid=searchSink(VM_NAME)
-        # sourceid=searchSource(VM_NAME)
-        # print("VM %s : sinkId %d sourceId %d" % (VM_NAME,sinkid,sourceid))
-        # client.send_server(ExecuteTSHUB+'bash -c "'+
-        #                    pactl_call+' move-source-output '+str(sourceid)+' \"alsa_input.pci-0000_00_1b.0.analog-stereo\"; '+
-        #                    pactl_call+' move-sink-input '+str(sinkid)+' \"alsa_output.pci-0000_00_1b.0.analog-stereo\"; '+
-        #                    pactl_call+' set-sink-input-mute '+str(sinkid)+' 1; '+
-        #                    pactl_call+' set-source-output-mute '+str(sourceid)+' 1; '+
-        #                    '"')
-        # print("Out of mute :"+str(client.get_OK()))
-        
-    time.sleep(3)
-    # register()
+def decrease_volume(tileNum=-1,tileId='001'):
+    if ( tileNum > -1 ):
+        i=tileNum
+    else:
+        i=tileId-1
+    VM=containerId(i+1)
+    launch_Hub('pactl set-sink-volume stu_sink'+VM+' 50')
+
     
-
-def launch_unmute():
-    launch_pactl_Hub('pactl set-sink-volume '+str(sinkVMindex[i])+' 100%')
-
-def increase_volume():
-    launch_pactl_Hub('pactl set-sink-volume '+str(sinkVMindex[i])+' 100%')
-    
-def decrease_volume():
-    launch_pactl_Hub('pactl set-sink-volume '+str(sinkVMindex[i])+' 50%')
-    
-def get_all_sinks():
-    global pactl_call
-    client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' list sink-inputs > out_all_sinks" </dev/null > /dev/null 2>&1  &')
-    client.get_OK()
-    client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' list sink-inputs | grep -i -B23 application.process.host > out_sinks" </dev/null > /dev/null 2>&1 &')
-    client.get_OK()
-
-
-def get_all_sources():
-    global pactl_call
-    client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' list source-outputs > out_all_sources" </dev/null > /dev/null 2>&1 &')
-    client.get_OK()
-    client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' list source-outputs | grep -i -B23 application.process.host > out_sources" </dev/null > /dev/null 2>&1 &')
-    client.get_OK()
-
 
 def open_sound(tileNum=-1,tileId='001'):
-    global pactl_call
-    if ( tileNum > -1 ):
-        VM_NAME=DOCKER_NAME+"_"+DATE+"_"+str(tileNum+1)
-        id=tileNum
-    else:
-        VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (int(tileId))
-        id=int(tileId)
-    client.send_server(ExecuteTSHUB+' '+pactl_call+' set-sink-input-mute '+str(sinkIds[id])+' 1')
-    client.get_OK()
-
+    launch_unmute(tileNum=tileNum,tileId=tileId)
+    
 def hear_this_one(tileNum=-1,tileId='001'):
     global pactl_call
     if ( tileNum > -1 ):
