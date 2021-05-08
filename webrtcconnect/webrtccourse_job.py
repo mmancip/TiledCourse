@@ -325,23 +325,9 @@ def Kill_Hub():
     client.send_server(COMMAND)
     print("Out of kill obs : "+ str(client.get_OK()))
 
-    #wakeup()
-    # Exit sound :
-    # COMMAND=ExecuteTSHUB+' bash -c "export List_open=\$(pactl list modules | grep -B1 \"null-sink\\|loopback\" '+\
-    #          '| grep -o \"[0-9]*\"); echo \${List_open[*]} > list_pactl; '+\
-    #          'for id in \${List_open[*]}; do pactl unload-module \$id &> /dev/null ; done"' 
-    # client.send_server(COMMAND)
-    # print("Out of unload sound : "+ str(client.get_OK()))
-
-    # COMMAND='export List_open=$(pactl list modules | grep -B1 "null-sink\|loopback" '+\
-    #          '| grep -o "[0-9]*"); echo \${List_open[*]} > list_pactl; '+\
-    #          'for id in \${List_open[*]}; do pactl unload-module \$id &> /dev/null ; done'
-    # print("Command unload module : "+COMMAND)
-    # launch_Hub(COMMAND)
-
     COMMAND_DISPLAY=ExecuteHTTP+" bash -c \"' pulseaudio -k '\"" 
     client.send_server(COMMAND_DISPLAY)
-    print("Out of restart pulseaudio on HTTP_Frontend : "+ str(client.get_OK()))
+    print("Out of reinitialize pulseaudio on HTTP_Frontend : "+ str(client.get_OK()))
     
     COMMAND=LaunchTSHUB+' ./dockerStop.sh '+NOM_FICHIER_ETUDIANT_GENERE+' '+GPU_FILE
     print("\nCommand stop Hub : "+COMMAND)
@@ -554,11 +540,8 @@ def launch_sound():
     # Un seul étudiant parle à la fois comme ça son son ne peut pas re-rentrer. 
     #launch_Hub('pactl set-default-sink stu_sink')
 
-    
-def pulse_VMChrome():
     # TODO : considering local docker network is safe, one can only connect from VM to HUB with socat and open 4000 port. 
-    # only HUB to HTTP_FRONTEND may be encrypted.
-    
+    # only HUB to HTTP_FRONTEND may be encrypted.    
     wakeup()
     for i in range(NUM_DOCKERS):
         VM=containerId(i+1)
@@ -663,11 +646,13 @@ def launch_chrome():
             client.get_OK()
             
             time.sleep(5)
+            wakeup()
             COMMAND='id=$(pactl list sink-inputs  |grep -i -B23 \"'+VM_NAME+'\" '+\
                 '|head -1 |sed -e \"s/Sink Input #//\"); echo \$id; '+\
                 'pactl move-sink-input \$id stu_sink'+VM+' >> .vnc/out_move_sink'+VM+' 2>&1'
             launch_Hub(COMMAND)
 
+            wakeup()
             COMMAND='id=$(pactl list source-outputs  |grep -i -B23 \"'+VM_NAME+'\" '+\
                 '|head -1 |sed -e \"s/Source Output #//\"); echo \$id; '+\
                 'pactl move-source-output \$id stu_source'+VM+' >> .vnc/out_move_source'+VM+' 2>&1'
@@ -681,21 +666,64 @@ def launch_chrome():
             
             sys.stdout.flush()
 
-def launch_unmute(tileNum=-1,tileId='001'):
+# Launch google-chrome
+def place_chrome_sound():
+    for i in range(NUM_DOCKERS):
+        VM=containerId(i+1)
+        VM_NAME=DOCKER_NAME+"_"+DATE+"_"+VM
+
+        COMMAND='id=$(pactl list sink-inputs  |grep -i -B23 \"'+VM_NAME+'\" '+\
+            '|head -1 |sed -e \"s/Sink Input #//\"); echo \$id; '+\
+            'pactl move-sink-input \$id stu_sink'+VM+' >> .vnc/out_move_sink'+VM+' 2>&1'
+        launch_Hub(COMMAND)
+
+        COMMAND='id=$(pactl list source-outputs  |grep -i -B23 \"'+VM_NAME+'\" '+\
+            '|head -1 |sed -e \"s/Source Output #//\"); echo \$id; '+\
+            'pactl move-source-output \$id stu_source'+VM+' >> .vnc/out_move_source'+VM+' 2>&1'
+        launch_Hub(COMMAND)
+
+            
+Volume_Out=[0]*NUM_DOCKERS
+Volume_In=[100]*NUM_DOCKERS
+
+def get_volume_out(tileNum=-1,tileId='001'):
     if ( tileNum > -1 ):
         i=tileNum
     else:
         i=tileId-1
     VM=containerId(i+1)
-    launch_Hub('pactl set-sink-volume stu_sink'+VM+' 100')
+    VM_NAME=DOCKER_NAME+"_"+DATE+"_"+VM
+    COMMAND='volume_out=$(pactl list sinks |grep -i -B8 -A3 stu_sink'+VM+')'+\
+        'echo \$volume_out; '+\
+        ' > .vnc/out_volume_out'+VM+' 2>&1'
+    launch_Hub(COMMAND)
 
+def open_sound(tileNum=-1,tileId='001'):
+    if ( tileNum > -1 ):
+        i=tileNum
+    else:
+        i=tileId-1
+    VM=containerId(i+1)
+    Volume_Out[i]=100
+    launch_Hub('pactl set-sink-volume stu_sink'+VM+' 100%%')
+
+def mute(tileNum=-1,tileId='001'):
+    if ( tileNum > -1 ):
+        i=tileNum
+    else:
+        i=tileId-1
+    VM=containerId(i+1)
+    Volume_Out[i]=0
+    launch_Hub('pactl set-sink-volume stu_sink'+VM+' %d%%' % Volume_Out[i])
+    
 def increase_volume(tileNum=-1,tileId='001'):
     if ( tileNum > -1 ):
         i=tileNum
     else:
         i=tileId-1
     VM=containerId(i+1)
-    launch_Hub('pactl set-sink-volume stu_sink'+VM+' 100')
+    Volume_Out[i]=Volume_Out[i]+10
+    launch_Hub('pactl set-sink-volume stu_sink'+VM+' %d%%' % Volume_Out[i])
     
 def decrease_volume(tileNum=-1,tileId='001'):
     if ( tileNum > -1 ):
@@ -703,47 +731,9 @@ def decrease_volume(tileNum=-1,tileId='001'):
     else:
         i=tileId-1
     VM=containerId(i+1)
-    launch_Hub('pactl set-sink-volume stu_sink'+VM+' 50')
-
+    Volume_Out[i]=Volume_Out[i]-10
+    launch_Hub('pactl set-sink-volume stu_sink'+VM+' %d%%' % Volume_Out[i])
     
-
-def open_sound(tileNum=-1,tileId='001'):
-    launch_unmute(tileNum=tileNum,tileId=tileId)
-    
-def hear_this_one(tileNum=-1,tileId='001'):
-    global pactl_call
-    if ( tileNum > -1 ):
-        VM_NAME=DOCKER_NAME+"_"+DATE+"_"+str(tileNum+1)
-        id=tileNum+1
-    else:
-        VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (int(tileId))
-        id=int(tileId)
-    for i in range(NUM_STUDENTS):
-        VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (i+1)
-        if (i+1 == id):
-            client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' move-source-output '+sinkIds[id]+' \"stu_sink.monitor\"')
-            client.get_OK()
-            client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' move-sink-input '+sinkIds[id]+' \"alsa_output.pci-0000_00_1b.0.analog-stereo\"')
-            client.get_OK()
-        else:
-            client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' move-source-output '+sinkIds[id]+' \"alsa_input.pci-0000_00_1b.0.analog-stereo\"')
-            client.get_OK()
-            client.send_server(ExecuteTSHUB+' nohup bash -c "'+pactl_call+' move-sink-input '+sinkIds[id]+' \"stu_source\"')
-            client.get_OK()
-
-    client.send_server(ExecuteTSHUB+' '+pactl_call+' set-sink-input-mute '+sinkIds[id]+' 0')
-    client.get_OK()
-    
-def close_sound(tileNum=-1,tileId='001'):
-    if ( tileNum > -1 ):
-        VM_NAME=DOCKER_NAME+"_"+DATE+"_"+str(tileNum+1)
-    else:
-        VM_NAME=DOCKER_NAME+"_"+DATE+"_"+"%03d" % (int(tileId))
-    client.send_server(ExecuteTSHUB+' TiledCourse/webrtcconnect/DockerHub/script/muteAll.sh '+VM_NAME)
-    #pactl set-sink-input-mute $id 0
-    client.get_OK()
-    # client.send_server(ExecuteTSHUB+' '+pactl_call+' set-source-output-mute '+VM_NAME+' 1')
-    # client.get_OK()
 
 # Launch 
 # def launch_all(COMMAND):
