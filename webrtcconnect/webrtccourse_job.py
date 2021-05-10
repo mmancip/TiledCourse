@@ -42,7 +42,7 @@ SERVER_JITSI=config['SITE']['SERVER_JITSI']
 
 # Must v4l2loopback mount on /dev/video${VideoDeviceNumber} device.
 # Please Read INSTALL doc for modprobe v4l2loopback command.
-VideoDeviceNumber=config['SITE']['VIDEODEVICENUMBER']
+VideoDeviceNumber=config['SITE']['VideoDeviceNumber']
 
 
 config.read(CASE_config)
@@ -611,7 +611,7 @@ def launch_OBS():
             TilesStr=' Tiles=('+containerId(count_lines)+') '
             client.send_server(ExecuteTS+TilesStr+COMMAND_ffmpeg)
             print("Out of ffmpeg : "+ str(client.get_OK()))
-            time.sleep(1.5)
+            time.sleep(2)
     sys.stdout.flush()
 
 
