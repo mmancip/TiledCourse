@@ -27,9 +27,14 @@ You must install /dev/video0 loopback device for video on all docker hosts.
 v4l2loopback is a linux kernel module. See Appendix A for installation instructions.
 
 Then run this command to build virtual video device /dev/video0 to send
-teacher USB cam to all students (run as root) :
+teacher USB cam to all students (run as root) : choose a NUMERO_DEVICE
 > NUMERO_DEVICE=0
 > sudo modprobe v4l2loopback devices=1 video_nr=${NUMERO_DEVICE} card_label="TEACHER_CAM" exclusive_caps=1
+(you can see result of this command with
+> lsmod |grep v4l2loopback
+)
+You must change site_config.ini file for VideoDeviceNumber parameter with this NUMERO_DEVICE value.
+
 > sudo chmod a+rw /dev/video${NUMERO_DEVICE}
 For now NUMERO_DEVICE must be 0 (and no usb webcam must be installed on the host before this command is running).
 This command is not persistent.

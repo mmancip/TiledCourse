@@ -40,6 +40,11 @@ GPU_FILE=config['SITE']['GPU_FILE']
 
 SERVER_JITSI=config['SITE']['SERVER_JITSI']
 
+# Must v4l2loopback mount on /dev/video${VideoDeviceNumber} device.
+# Please Read INSTALL doc for modprobe v4l2loopback command.
+VideoDeviceNumber=config['SITE']['VIDEODEVICENUMBER']
+
+
 config.read(CASE_config)
 
 CASE=config['CASE']['CASE_NAME']
@@ -180,9 +185,6 @@ COMMAND_copy=LaunchTS+"cp -r TiledCourse/webrtcconnect/DockerHub/dockerRunHub.sh
 client.send_server(COMMAND_copy)
 print("Out of copy scripts from TiledCourse : "+ str(client.get_OK()))
     
-# Must have only one /dev/video0 device or test on each machine v4l2loopback dev?
-VideoDeviceNumber=str(0)
-
 network="classroom"+IdClassroom
 # "X" for no swarm !
 domain="11.0.0"
@@ -536,7 +538,8 @@ def launch_sound():
     launch_Hub('pactl load-module module-loopback source='+dev_source+' sink=stu_source')
     
     # Le son des étudiants va dans les inputs des étudiants
-    #launch_Hub('pactl load-module module-loopback source=stu_sink.monitor sink=stu_source')
+    launch_Hub('pactl load-module module-loopback source=stu_sink.monitor sink=stu_source')
+    
     # Un seul étudiant parle à la fois comme ça son son ne peut pas re-rentrer. 
     #launch_Hub('pactl set-default-sink stu_sink')
 
@@ -658,7 +661,7 @@ def launch_chrome():
                 'pactl move-source-output \$id stu_source'+VM+' >> .vnc/out_move_source'+VM+' 2>&1'
             launch_Hub(COMMAND)
 
-            launch_Hub('pactl set-sink-volume stu_sink'+VM+' 0')
+            mute(VM)
 
             client.send_server(ExecuteTSHUB+' bash -c "pactl list > .vnc/out_sound_'+str(count_lines)+'"')
             #nohup ... </dev/null > /dev/null 2>&1  &
