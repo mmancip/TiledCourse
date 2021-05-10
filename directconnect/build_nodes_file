@@ -28,15 +28,17 @@ function min {
 DATE=$(date +%F_%H-%M-%S)
 
 # sort student file by login
-sort -o list_students -t ';' -k 3 ${FILEPATH}
+#sort -o list_students -t ';' -k 3 ${FILEPATH}
+list_students=${FILEPATH}
 
 # sort machine/login file by login
-sort -o list_machines -t ',' -k 2 directconnection.csv
+#sort -o list_machines -t ',' -k 2 directconnection.csv
+list_machines=directconnection.csv
 
 echo '{ "nodes": [' > nodes.json
 #echo 'echo '' >> nodes.json' >> nodes.json
 i=0
-while IFS=';' read -r -u3 line || [[ -n "$line" ]] && IFS=',' read -r -u4 line2; do
+while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
 
   i2=$((2*(i+1)))
   i0=$(printf "%03d" $((i+1)))
@@ -50,15 +52,13 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]] && IFS=',' read -r -u4 line2;
   MAILstudent=${aline[1]}
   echo "Student mail : " ${MAILstudent} 
 
+  # Login
   USERstudent=${aline[2]//[[:blank:]]/}
-  #HOMEstudent=$HOMEstudents$USERstudent #TODO : change if home is in another place???
-  #echo "Student home dir : $HOMEstudent"
-
 
   # Machine values
-  IFS=',' read -r -a aline2 <<<$line2
-
+  IFS=',' read -r -a aline2 <<<$(grep ${USERstudent} list_machines )
   MACHINE=${aline2[0]}
+  
   echo "Machine : " ${MACHINE} 
   
   if [ $i -gt 0 ]; then
@@ -81,7 +81,7 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]] && IFS=',' read -r -u4 line2;
   echo '  "variable" : "ID-'$i0'"' >> nodes.json
 
   i=$(( i + 1 ))
-done 3< list_students 4< list_machines
+done 3< list_students
 
 echo '}' >> nodes.json
 echo '] }' >> nodes.json
