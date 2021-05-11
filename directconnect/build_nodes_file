@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash -vx
 
 CASE_NAME=UNKNOWN
 NOVNC_URL='http://mycuster/kanaka-noVNC-33e1462/vnc_auto.html'
@@ -28,23 +28,23 @@ function min {
 DATE=$(date +%F_%H-%M-%S)
 
 # sort student file by login
-#sort -o list_students -t ';' -k 3 ${FILEPATH}
-list_students=${FILEPATH}
+sort -o list_students -t ';' -k 3 ${FILEPATH}
+cat list_students
 
 # sort machine/login file by login
-#sort -o list_machines -t ',' -k 2 directconnection.csv
-list_machines=directconnection.csv
+sort -o list_machines -t ',' -k 2 directconnection.csv
 
 echo '{ "nodes": [' > nodes.json
 #echo 'echo '' >> nodes.json' >> nodes.json
 i=0
-while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
+while IFS=';' read -r -u3 line ; do
 
   i2=$((2*(i+1)))
   i0=$(printf "%03d" $((i+1)))
 
+  echo ${line[*]}
   # Student values
-  IFS=';' read -r -a aline <<<$line
+  IFS=';' read -r -a aline <<<${line[*]}
 
   STUDENT=${aline[0]}
   echo "Student : " ${STUDENT} 
@@ -69,7 +69,7 @@ while IFS=';' read -r -u3 line || [[ -n "$line" ]]; do
 
   echo '{"title": "'${STUDENT}'",' >> nodes.json
 
-  URL=$(echo $NOVNC_URL | envsubst) # expand envars in $NOVNC_URL
+  URL=$NOVNC_URL
 
   IFS=';' read -r -a passline <<<$( grep ${USERstudent} list_password )
 
