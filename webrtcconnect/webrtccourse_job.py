@@ -322,12 +322,15 @@ def wakeup():
     # Wait for server to start pactl access to Hub
     launch_Hub("pactl info > /dev/null")
     
+pulsedir=""
 def Kill_Hub():
+    global pulsedir
+    
     COMMAND=ExecuteHTTP+' killall obs'
     client.send_server(COMMAND)
     print("Out of kill obs : "+ str(client.get_OK()))
 
-    COMMAND_DISPLAY=ExecuteHTTP+" bash -c \"' pulseaudio -k '\"" 
+    COMMAND_DISPLAY=ExecuteHTTP+" bash -c \"'XDG_RUNTIME_DIR="+pulsedir+" pulseaudio -k '\"" 
     client.send_server(COMMAND_DISPLAY)
     print("Out of reinitialize pulseaudio on HTTP_Frontend : "+ str(client.get_OK()))
     
@@ -421,7 +424,7 @@ sourceVMindex=[]
 sinkVMindex=[]
 
 def launch_sound():
-    global pactl_call, dev_source, dev_sink, sourceindex, sinkdex
+    global pactl_call, pulsedir, dev_source, dev_sink, sourceindex, sinkdex
     
     # Get pulseaudio socket on HTTP_FRONTEND through DockerHub :
     COMMAND=ExecuteHTTP+' bash -c "\'/sbin/lsof -c pulseaudio  2>/dev/null |grep \\\"/native\\\" '+\
