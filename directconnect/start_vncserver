@@ -1,0 +1,1 @@
+x11vnc -forever -noncache -noxdamage  -tightfilexfer -rfbauth .vnc/passwd -cursor -arrow -safer -shared -http
