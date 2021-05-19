@@ -1,4 +1,4 @@
-#!/bin/bash -vx
+#!/bin/bash 
 
 CASE_NAME=UNKNOWN
 NOVNC_URL='http://mycuster/kanaka-noVNC-33e1462/vnc_auto.html'
@@ -33,18 +33,28 @@ cat list_students
 
 # sort machine/login file by login
 sort -o list_machines -t ',' -k 2 directconnection.csv
+sed -e '/^END$/d' -i list_machines
 
 echo '{ "nodes": [' > nodes.json
 #echo 'echo '' >> nodes.json' >> nodes.json
 i=0
-while IFS=';' read -r -u3 line ; do
+while IFS=';' read -r -u3 line2 ; do
 
   i2=$((2*(i+1)))
   i0=$(printf "%03d" $((i+1)))
 
-  echo ${line[*]}
+  # Machine values
+  IFS=',' read -r -a aline2 <<<${line2[*]}
+  MACHINE=${aline2[0]}
+  # Login
+  USERstudent=${aline2[1]//[[:blank:]]/}
+
+  echo "student : "${USERstudent} "| Machine : " ${MACHINE} 
+  
+  #echo ${line[*]}
+
   # Student values
-  IFS=';' read -r -a aline <<<${line[*]}
+  IFS=';' read -r -a aline <<<$(grep ${USERstudent} list_students )
 
   STUDENT=${aline[0]}
   echo "Student : " ${STUDENT} 
@@ -53,14 +63,8 @@ while IFS=';' read -r -u3 line ; do
   echo "Student mail : " ${MAILstudent} 
 
   # Login
-  USERstudent=${aline[2]//[[:blank:]]/}
+  #USERstudent=${aline[2]//[[:blank:]]/}
 
-  # Machine values
-  IFS=',' read -r -a aline2 <<<$(grep ${USERstudent} list_machines )
-  MACHINE=${aline2[0]}
-  
-  echo "Machine : " ${MACHINE} 
-  
   if [ $i -gt 0 ]; then
       echo '},' >> nodes.json
   fi
@@ -81,7 +85,7 @@ while IFS=';' read -r -u3 line ; do
   echo '  "variable" : "ID-'$i0'"' >> nodes.json
 
   i=$(( i + 1 ))
-done 3< list_students
+done 3< list_machines
 
 echo '}' >> nodes.json
 echo '] }' >> nodes.json
