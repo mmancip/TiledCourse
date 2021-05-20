@@ -60,31 +60,31 @@ if __name__ == '__main__':
     NUM_STUDENTS=countlines(FILEPATH)
     print("Number of students :"+str(NUM_STUDENTS))
     
-    CreateTS='create TS='+TileSet+' Nb='+str(NUM_STUDENTS)
-    client.send_server(CreateTS)
+    #CreateTS='create TS='+TileSet+' Nb='+str(NUM_STUDENTS)
+    #client.send_server(CreateTS)
 
     # get TiledCourse package from Github
     os.system("git clone https://github.com/mmancip/TiledCourse.git")
 
     # Send CASE and SITE files
-    try:
-        send_file_server(client,TileSet,"TiledCourse/directconnect", "build_nodes_file", JOBPath)
+    #try:
+    #    send_file_server(client,TileSet,"TiledCourse/directconnect", "build_nodes_file", JOBPath)
 
-        send_file_server(client,TileSet,".", CASE_config, JOBPath)
-        CASE_config=os.path.join(JOBPath,os.path.basename(CASE_config))
-        send_file_server(client,TileSet,".", SITE_config, JOBPath)
-        SITE_config=os.path.join(JOBPath,os.path.basename(SITE_config))
+    #    send_file_server(client,TileSet,".", CASE_config, JOBPath)
+    #    CASE_config=os.path.join(JOBPath,os.path.basename(CASE_config))
+    #    send_file_server(client,TileSet,".", SITE_config, JOBPath)
+    #    SITE_config=os.path.join(JOBPath,os.path.basename(SITE_config))
 
-        send_file_server(client,TileSet,".", FILEPATH, JOBPath)
-        send_file_server(client,TileSet,".", "list_password", JOBPath)
+    #    send_file_server(client,TileSet,".", FILEPATH, JOBPath)
+    #    send_file_server(client,TileSet,".", "list_password", JOBPath)
 
-    except:
-        print("Error sending files !")
-        traceback.print_exc(file=sys.stdout)
-        try:
-            code.interact(banner="Try sending files by yourself :",local=dict(globals(), **locals()))
-        except SystemExit:
-            pass
+    #except:
+    #    print("Error sending files !")
+    #    traceback.print_exc(file=sys.stdout)
+    #    try:
+    #        code.interact(banner="Try sending files by yourself :",local=dict(globals(), **locals()))
+    #    except SystemExit:
+    #        pass
 
     # Call Etherpad and wait for result
     def launch_etherpad():
@@ -114,21 +114,23 @@ if __name__ == '__main__':
             logging.error("Error calling %s : %s" % ( etherpadscript, err ))
             return
         #sys.argv=saveargv
-        send_file_server(client,TileSet,".", "directconnection.csv", JOBPath)
+        #send_file_server(client,TileSet,".", "directconnection.csv", JOBPath)
 
     launch_etherpad()
     
     # Build nodes.json file from new dockers list
     def build_nodes_file():
         print("Build nodes.json file from new dockers list.")
-        COMMAND='launch TS='+TileSet+" "+JOBPath+' ./build_nodes_file '+CASE_config+' '+SITE_config+' '+TileSet
-        print("\nCommand dockers : "+COMMAND)
+        COMMAND='TiledCourse/directconnect/build_nodes_file '+CASE_config+' '+SITE_config+' '+TileSet
 
-        client.send_server(COMMAND)
-        print("Out of build_nodes_file : "+ str(client.get_OK()))
-        time.sleep(2)
-        get_file_client(client,TileSet,JOBPath,"nodes.json",".")
-        #os.system('rm -f ./nodes.json')
+        #COMMAND='launch TS='+TileSet+" "+JOBPath+' ./build_nodes_file '+CASE_config+' '+SITE_config+' '+TileSet
+        print("\nCommand build_nodes_files : "+COMMAND)
+        os.system(COMMAND)
+        #client.send_server(COMMAND)
+        #print("Out of build_nodes_file : "+ str(client.get_OK()))
+        #time.sleep(2)
+        #get_file_client(client,TileSet,JOBPath,"nodes.json",".")
+        ##os.system('rm -f ./nodes.json')
 
     build_nodes_file()
 
