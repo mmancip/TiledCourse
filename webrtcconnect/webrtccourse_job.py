@@ -477,7 +477,7 @@ def launch_sound():
                 dev_source=line.replace("Default Source: ","")
 
     # Pulse VM :
-    COMMAND_Pulse="ssh -4 -fNT -i .ssh/id_rsa_hub -L4000:localhost:4000 "+IP_Hub+" &"
+    COMMAND_Pulse="ssh -4 -c aes128-ctr -fNT -i .ssh/id_rsa_hub -L4000:localhost:4000 "+IP_Hub+" &"
     CommandTS=ExecuteTS+" "+COMMAND_Pulse
     client.send_server(CommandTS)
     print("Out of ssh Hub : "+ str(client.get_OK()))
@@ -603,7 +603,9 @@ def launch_OBS():
     print("Out of execute OBS for user : "+ str(client.get_OK()))
 
     time.sleep(3)
-
+    launch_ffmpeg()
+    
+def launch_ffmpeg():
     #TODO : how to force only one ffmpeg by node (cf mageiawebrtc/command_ffmpeg)
     COMMAND_ffmpeg=" /opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" "+IP_Hub+" &"
     with open(FILEPATH) as csv_file:
@@ -664,7 +666,7 @@ def launch_chrome():
                 'pactl move-source-output \$id stu_source'+VM+' >> .vnc/out_move_source'+VM+' 2>&1'
             launch_Hub(COMMAND)
 
-            mute(VM)
+            mute(tileId=VM)
 
             client.send_server(ExecuteTSHUB+' bash -c "pactl list > .vnc/out_sound_'+str(count_lines)+'"')
             #nohup ... </dev/null > /dev/null 2>&1  &
@@ -696,7 +698,7 @@ def get_volume_out(tileNum=-1,tileId='001'):
     if ( tileNum > -1 ):
         i=tileNum
     else:
-        i=tileId-1
+        i=int(tileId)-1
     VM=containerId(i+1)
     VM_NAME=DOCKER_NAME+"_"+DATE+"_"+VM
     COMMAND='volume_out=$(pactl list sinks |grep -i -B8 -A3 stu_sink'+VM+')'+\
@@ -708,7 +710,7 @@ def open_sound(tileNum=-1,tileId='001'):
     if ( tileNum > -1 ):
         i=tileNum
     else:
-        i=tileId-1
+        i=int(tileId)-1
     VM=containerId(i+1)
     Volume_Out[i]=100
     launch_Hub('pactl set-sink-volume stu_sink'+VM+' 100%%')
@@ -717,7 +719,7 @@ def mute(tileNum=-1,tileId='001'):
     if ( tileNum > -1 ):
         i=tileNum
     else:
-        i=tileId-1
+        i=int(tileId)-1
     VM=containerId(i+1)
     Volume_Out[i]=0
     launch_Hub('pactl set-sink-volume stu_sink'+VM+' %d%%' % Volume_Out[i])
@@ -726,7 +728,7 @@ def increase_volume(tileNum=-1,tileId='001'):
     if ( tileNum > -1 ):
         i=tileNum
     else:
-        i=tileId-1
+        i=int(tileId)-1
     VM=containerId(i+1)
     Volume_Out[i]=Volume_Out[i]+10
     launch_Hub('pactl set-sink-volume stu_sink'+VM+' %d%%' % Volume_Out[i])
@@ -735,7 +737,7 @@ def decrease_volume(tileNum=-1,tileId='001'):
     if ( tileNum > -1 ):
         i=tileNum
     else:
-        i=tileId-1
+        i=int(tileId)-1
     VM=containerId(i+1)
     Volume_Out[i]=Volume_Out[i]-10
     launch_Hub('pactl set-sink-volume stu_sink'+VM+' %d%%' % Volume_Out[i])
@@ -769,6 +771,7 @@ def kill_all_containers():
     client.send_server(ExecuteTS+' killall Xvnc')
     print("Out of killall command : "+ str(client.get_OK()))
     client.send_server(LaunchTS+" "+COMMANDStop)
+    print("Out of stop command : "+ str(client.get_OK()))
 
     Kill_Hub()
 

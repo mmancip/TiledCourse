@@ -1,9 +1,10 @@
 {"action1":["launch_sound","perm_camera_mic"],
  "action2":["launch_OBS","switch_video"],
  "action3":["launch_chrome","open_in_browser"],
- "action4":["place_chrome_sound","headset_mic"],
- "action5":["open_sound","volume_mute"],
- "action6":["mute","volume_off"],
- "action7":["decrease_volume","volume_down"],
- "action8":["increase_volume","volume_up"],
- "action9":["kill_all_containers","delete_forever"]}
+ "action4":["open_sound","volume_mute"],
+ "action5":["mute","volume_off"],
+ "action6":["decrease_volume","volume_down"],
+ "action7":["increase_volume","volume_up"],
+ "action8":["place_chrome_sound","headset_mic"],
+ "action9":["launch_ffmpeg","cast"],
+ "action10":["kill_all_containers","delete_forever"]}

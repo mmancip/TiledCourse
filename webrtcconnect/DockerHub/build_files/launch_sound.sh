@@ -13,6 +13,6 @@ LOCAL_CONF=${DIR_PULSE}/client.conf
 # All pulseaudio in container listen to 4000
 echo 'default-server = tcp:localhost:4000' > ${LOCAL_CONF}
 
-ssh -4 -fNT -L4000:$NATIVE $LOGIN@$IP &
+ssh -4 -fNT -c aes128-ctr -L4000:$NATIVE $LOGIN@$IP &
 
 
