@@ -12,7 +12,7 @@ then
 	read Hostline < ${HostFile}
 	realhost=${Hostline% *}
 	 
-	DATE=$( ssh ${realhost} docker inspect HUB-CR${IdClassroom} |grep DATE= |sed -e 's&.*DATE=&&' )
+	DATE=$( ssh ${realhost} docker inspect HUB-CR${IdClassroom} |grep DATE= |sed -e 's&.*DATE=\(.*\)",&\1&' )
 	echo $DATE
 	ssh ${realhost} bash -c "'ls -la /tmp/hub-${DATE}'"
 	ssh ${realhost} bash -c "'[ -d /tmp/hub-${DATE} ] && rm -rf /tmp/hub-${DATE}'"
