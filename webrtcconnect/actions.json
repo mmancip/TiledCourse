@@ -5,6 +5,5 @@
  "action5":["mute","volume_off"],
  "action6":["decrease_volume","volume_down"],
  "action7":["increase_volume","volume_up"],
- "action8":["place_chrome_sound","headset_mic"],
- "action9":["launch_ffmpeg","cast"],
- "action10":["kill_all_containers","delete_forever"]}
+ "action8":["launch_ffmpeg","cast"],
+ "action9":["kill_all_containers","delete_forever"]}
