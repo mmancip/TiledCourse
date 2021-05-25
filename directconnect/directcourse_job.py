@@ -103,7 +103,7 @@ if __name__ == '__main__':
         
         #saveargv=sys.argv
         #sys.argv=[etherpadscript,"--host="+etherpadhost,"-p","9001","-u",TVuser,"-a",APIKey]
-        etherport="8001"
+        etherport="8081"
         print("host=%s ,port=%s ,user=%s ,apikey=%s " % (etherpadhost, etherport, TVuser, APIKey))
         
         # Call etherpad script :
