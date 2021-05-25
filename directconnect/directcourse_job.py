@@ -33,13 +33,13 @@ if __name__ == '__main__':
     HTTP_FRONTEND=config['SITE']['HTTP_FRONTEND']
     HOMEstudents=config['SITE']['HOMEstudents']
     EtherpadURL=config['SITE']['ETHERPAD'].replace('"','')
+    APIKey=config['SITE']['APIKey']
+    etherpadhost=config['SITE']['etherpad']
     
     config.read(CASE_config)
 
     CASE=config['CASE']['CASE_NAME']
 
-    APIKey=config['CASE']['APIKey']
-    etherpadhost=config['CASE']['etherpad']
     MAIL=config['CASE']['MAIL']
     
     VNCPORT=config['CASE']['VNCPORT']
@@ -103,12 +103,13 @@ if __name__ == '__main__':
         
         #saveargv=sys.argv
         #sys.argv=[etherpadscript,"--host="+etherpadhost,"-p","9001","-u",TVuser,"-a",APIKey]
-        print("host=%s ,port=%s ,user=%s ,apikey=%s " % (etherpadhost, "9001", TVuser, APIKey))
+        etherport="8001"
+        print("host=%s ,port=%s ,user=%s ,apikey=%s " % (etherpadhost, etherport, TVuser, APIKey))
         
         # Call etherpad script :
         try:
             #exec(compile(open(etherpadscript, "rb").read(), etherpadscript, 'exec'), globals(), locals())
-            etherpad.etherpad(host=etherpadhost,port="9001",user=TVuser,apikey=APIKey,mail=MAIL,filestud=FILEPATH,etherpadurl=EtherpadURL)
+            etherpad.etherpad(host=etherpadhost,port=etherport,user=TVuser,apikey=APIKey,mail=MAIL,filestud=FILEPATH,etherpadurl=EtherpadURL)
         except Exception as err:
             traceback.print_exc(file=sys.stderr)
             logging.error("Error calling %s : %s" % ( etherpadscript, err ))

@@ -12,7 +12,7 @@ secretkey=$({
 	  })
 echo Random Password Generated: $secretkey |tee -a $LOGFILE
 
-docker run --detach --name=etherpad --publish 8081:9001 -e "ADMIN_PASSWORD=$secretkey" etherpad/etherpad >> $LOGFILE 2>&1
+docker run --detach --name=etherpad --publish 8001:9001 -e "ADMIN_PASSWORD=$secretkey" etherpad/etherpad >> $LOGFILE 2>&1
 export APIKEY=$(docker exec -it etherpad cat /opt/etherpad-lite/APIKEY.txt)
 echo $APIKEY  |tee -a $LOGFILE
 
