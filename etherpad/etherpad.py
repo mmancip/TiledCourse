@@ -21,7 +21,7 @@ import random
 initText="Please register your hostname and login name\nmachine IP  ,  login\n"
 
 # Args default
-HOST="172.17.0.3"
+HOST="11.0.0.254"
 PORT="9001"
 User='ddurandi'
 APIKey='de17dsdqgvsdfg'
