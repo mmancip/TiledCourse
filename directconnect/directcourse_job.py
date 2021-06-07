@@ -14,6 +14,9 @@ from connect import sock
 import json
 import csv
 
+if (os.path.exists("config.tar")):
+    os.system("tar xf config.tar")
+
 SITE_config='./site_config.ini'
 CASE_config="./case_config.ini"
 
