@@ -5,11 +5,8 @@ RTMPPort=$2
 JitsiServer=$3
 VideoDevice=$4
 HostFile=$5
-network=$6
-domain=$7
-init_IP=$8
-CLIENT=$9
-shift 9
+CLIENT=$6
+shift 6
 TileSetPort=$1
 FRONTEND=$2
 DOCKER_NAME=$3
@@ -59,8 +56,6 @@ then
 	    -e DOCKERID="001" \
 	    -v /tmp/hub-${DATE}:/home/myuser/.vnc/ \
 	    --add-host ${CLIENT} \
-	    --net ${network} \
-	    --ip=${domain}.$((init_IP-1)) \
 	    --hostname HUB-CR${IdClassroom} \
 	    --name HUB-CR${IdClassroom} \
 	    --rm hub_dev_classroom:1.1 ${DOCKERARGS}

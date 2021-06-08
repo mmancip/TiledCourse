@@ -14,6 +14,9 @@ import inspect
 import json
 import csv
 
+if (os.path.exists("config.tar")):
+    os.system("tar xf config.tar")
+
 SITE_config='site_config.ini'
 CASE_config="case_config.ini"
 
@@ -178,16 +181,23 @@ COMMAND_TiledCourse=LaunchTS+COMMAND_GIT
 client.send_server(COMMAND_TiledCourse)
 print("Out of git clone TiledCourse : "+ str(client.get_OK()))
 
+COMMAND_checkout='bash -c "cd TiledCourse; git checkout noswarm"'
+print("command_checkout : "+COMMAND_checkout)
+COMMAND_TiledCourse=LaunchTS+COMMAND_checkout
+client.send_server(COMMAND_TiledCourse)
+print("Out of git checkout nowswarm TiledCourse : "+ str(client.get_OK()))
+
 COMMAND_copy=LaunchTS+"cp -r TiledCourse/webrtcconnect/DockerHub/dockerRunHub.sh "+\
                "TiledCourse/webrtcconnect/DockerHub/dockerStop.sh "+\
                "./"
-
 client.send_server(COMMAND_copy)
 print("Out of copy scripts from TiledCourse : "+ str(client.get_OK()))
     
-network="classroom"+IdClassroom
-# "X" for no swarm !
-domain="11.0.0"
+network="X"
+#"classroom"+IdClassroom
+# #domain="11.0."+IdClassroom
+domain="X"
+#"11.0.0"
 
 # Client for teacher must be the HTTP_FRONTEND (in site_config.ini) from TVConnection (detect Frontend IP ?)
 CLIENT=HTTP_FRONTEND+":"+HTTP_IP
@@ -219,7 +229,7 @@ def Run_Hub():
     COMMAND=LaunchTSHUB+' ./dockerRunHub.sh '+\
         NOM_FICHIER_ETUDIANT_GENERE+' '+\
         RTMPPORT+' '+SERVER_JITSI+' '+VideoDeviceNumber+' '+\
-        GPU_FILE+" "+network+" "+domain+" "+init_IP+" "+CLIENT+" TileSetPort "+Frontend+" "+DOCKER_NAME+" "+DATE
+        GPU_FILE+" "+CLIENT+" TileSetPort "+Frontend+" "+DOCKER_NAME+" "+DATE
     
     print("\nCommand RunHub : "+COMMAND)
     client.send_server(COMMAND)
@@ -243,7 +253,6 @@ def Run_Hub():
     # global HUB_Host
     # with open("list_hostsgpu","r") as hostfile :
     #     HUB_Host=hostfile.readline().split(" ")[0]
-    #     hostfile.close()
         
     # global DOCKER_HUB
     # DOCKER_HUB='ssh '+HUB_Host+' docker'
@@ -303,9 +312,30 @@ def Run_Hub():
     # print("Out of chmod key on Hub : "+ str(client.get_OK()))
 
 Run_Hub()
+sys.stdout.flush()
 
-IP_Hub=domain+"."+str(int(init_IP)-1)
+PORT_Hub=IdClassroom+"222"
+def get_HubIP():
+    #docker inspect $1 --format='{{.NetworkSettings.IPAddress}}'
+    with open("list_hostgpu","r") as hostgpu :
+        HubHost=hostgpu.readline().replace('\n','')
 
+    # grep desktop /etc/hosts | head -1
+    # dig mandelbrot-desktop.extra.cea.fr |grep mandelbrot-desktop.extra.cea.fr |tail -1
+    # ping -c 1 desktop |grep PING |sed -e "s/[^(]*(\([^)]*\)).*/\1/"
+    # ssh desktop /sbin/ip a |grep inet
+    # docker inspect $1 --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'
+    COMMAND_IP_Hub=LaunchTSHUB+' bash -c "ping -c 1 '+HubHost+' |grep PING |sed -e \"s/[^(]*(\([^)]*\)).*/\1/\" > IP_Hub'
+    print("\nCommand search Hub IP : "+COMMAND_IP_Hub)
+    client.send_server(COMMAND_IP_Hub)
+    print("Out of search Hub IP : "+ str(client.get_OK()))
+    get_file_client(client,TileSet,JOBPath,"IP_Hub",".")
+    with open("IP_Hub","r") as IPHubFile :
+        IP_Hub=IPHubFile.readline().replace('\n','')
+        #domain+"."+str(int(init_IP)-1)
+    print("Hub IP : "+ IP_Hub)
+
+get_HubIP()
 sys.stdout.flush()
 
 def launch_Hub(C):
@@ -477,7 +507,7 @@ def launch_sound():
                 dev_source=line.replace("Default Source: ","")
 
     # Pulse VM :
-    COMMAND_Pulse="ssh -4 -c aes128-ctr -fNT -i .ssh/id_rsa_hub -L4000:localhost:4000 "+IP_Hub+" &"
+    COMMAND_Pulse="ssh -4 -c aes128-ctr -fNT -i .ssh/id_rsa_hub -L4000:localhost:4000 -P "+PORT_Hub+" "+IP_Hub+" &"
     CommandTS=ExecuteTS+" "+COMMAND_Pulse
     client.send_server(CommandTS)
     print("Out of ssh Hub : "+ str(client.get_OK()))
@@ -489,7 +519,7 @@ def launch_sound():
     # print("Out of kill pulseaudio VM : "+ str(client.get_OK()))
     sys.stdout.flush()
     
-    COMMAND_cookie='bash -c "scp -i .ssh/id_rsa_hub \''+IP_Hub+':$HOME/.config/pulse/cookie\' .config/pulse/"'
+    COMMAND_cookie='bash -c "scp -i .ssh/id_rsa_hub -p '+PORT_Hub+' \''+IP_Hub+':$HOME/.config/pulse/cookie\' .config/pulse/"'
     if (args.debug):
         print("COMMAND for scp VM cookie : "+ COMMAND_cookie)
         sys.stdout.flush()
@@ -523,7 +553,6 @@ def launch_sound():
         sourceindex=re.sub('\t.*','',fsource.readline().replace('\n',''))
         print("sourceindex : "+sourceindex)
         sourceindex=int(sourceindex)
-        fsource.close()
     
     with open("index_stu_sink","r") as fsink :
         sinkmodule=fsink.readline().replace('\n','')
@@ -532,7 +561,6 @@ def launch_sound():
         sinkindex=re.sub('\t.*','',fsink.readline().replace('\n',''))
         print("sinkindex : "+sinkindex)
         sinkindex=int(sinkindex)
-        fsink.close()
 
     time.sleep(2)
     # Le son des étudiants sort sur les haut-parleurs du prof
@@ -573,13 +601,11 @@ def launch_sound():
             soindex=fsource.readline().replace('\n','')
             print("sourceindex%s : %s" % (VM,soindex))
             sourceVMindex.append(int(soindex))
-            fsource.close()
     
         with open("index_sink"+VM,"r") as fsink :
             siindex=fsink.readline().replace('\n','')
             print("sinkindex%s : %s" % (VM,siindex))
             sinkVMindex.append(int(siindex))
-            fsink.close()
 
         # Connect to global sound
         launch_Hub('pactl load-module module-loopback source=stu_sink'+VM+'.monitor sink=stu_sink')
@@ -604,19 +630,24 @@ def launch_OBS():
 
     time.sleep(3)
     launch_ffmpeg()
-    
+
+# force only one ffmpeg by node (cf mageiawebrtc/command_ffmpeg)
+list_hosts_ffmpeg=[]
 def launch_ffmpeg():
-    #TODO : how to force only one ffmpeg by node (cf mageiawebrtc/command_ffmpeg)
     COMMAND_ffmpeg=" /opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" "+IP_Hub+" &"
-    with open(FILEPATH) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=';')
-        count_lines=0
-        for row in csv_reader:
-            count_lines=count_lines+1
-            TilesStr=' Tiles=('+containerId(count_lines)+') '
-            client.send_server(ExecuteTS+TilesStr+COMMAND_ffmpeg)
-            print("Out of ffmpeg : "+ str(client.get_OK()))
-            time.sleep(2)
+    with open(FILEPATH) as csv_file :
+        with open("list_hostgpu","r") as hostgpu :
+            csv_reader = csv.reader(csv_file, delimiter=';')
+            count_lines=0
+            for row in csv_reader:
+                count_lines=count_lines+1
+                HubHost=hostgpu.readline().replace('\n','')
+                if (not HubHost in list_hosts_ffmpeg):
+                    TilesStr=' Tiles=('+containerId(count_lines)+') '
+                    client.send_server(ExecuteTS+TilesStr+COMMAND_ffmpeg)
+                    print("Out of ffmpeg on %s : %s "% (HubHost, str(client.get_OK())))
+                    list_hosts_ffmpeg.append(HubHost)
+                    #time.sleep(2)
     sys.stdout.flush()
 
 
