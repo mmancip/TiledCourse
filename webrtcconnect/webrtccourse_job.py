@@ -315,17 +315,19 @@ Run_Hub()
 sys.stdout.flush()
 
 PORT_Hub=IdClassroom+"222"
+IP_Hub=""
 def get_HubIP():
+    global IP_Hub
     #docker inspect $1 --format='{{.NetworkSettings.IPAddress}}'
-    with open("list_hostgpu","r") as hostgpu :
-        HubHost=hostgpu.readline().replace('\n','')
+    with open("list_hostsgpu","r") as hostgpu :
+        HubHost=hostgpu.readline().replace(' 0','').replace('\n','')
 
     # grep desktop /etc/hosts | head -1
     # dig mandelbrot-desktop.extra.cea.fr |grep mandelbrot-desktop.extra.cea.fr |tail -1
     # ping -c 1 desktop |grep PING |sed -e "s/[^(]*(\([^)]*\)).*/\1/"
     # ssh desktop /sbin/ip a |grep inet
     # docker inspect $1 --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'
-    COMMAND_IP_Hub=LaunchTSHUB+' bash -c "ping -c 1 '+HubHost+' |grep PING |sed -e \"s/[^(]*(\([^)]*\)).*/\1/\" > IP_Hub'
+    COMMAND_IP_Hub=LaunchTSHUB+' bash -c "ping -c 1 '+HubHost+' |grep PING |sed -e \\\"s/[^(]*(\([^)]*\)).*/\\1/\\\" > IP_Hub"'
     print("\nCommand search Hub IP : "+COMMAND_IP_Hub)
     client.send_server(COMMAND_IP_Hub)
     print("Out of search Hub IP : "+ str(client.get_OK()))
@@ -455,6 +457,7 @@ sinkVMindex=[]
 
 def launch_sound():
     global pactl_call, pulsedir, dev_source, dev_sink, sourceindex, sinkdex
+    global IP_Hub
     
     # Get pulseaudio socket on HTTP_FRONTEND through DockerHub :
     COMMAND=ExecuteHTTP+' bash -c "\'/sbin/lsof -c pulseaudio  2>/dev/null |grep \\\"/native\\\" '+\
@@ -507,7 +510,7 @@ def launch_sound():
                 dev_source=line.replace("Default Source: ","")
 
     # Pulse VM :
-    COMMAND_Pulse="ssh -4 -c aes128-ctr -fNT -i .ssh/id_rsa_hub -L4000:localhost:4000 -P "+PORT_Hub+" "+IP_Hub+" &"
+    COMMAND_Pulse="ssh -4 -c aes128-ctr -fNT -i .ssh/id_rsa_hub -L4000:localhost:4000 -p "+PORT_Hub+" "+IP_Hub+" &"
     CommandTS=ExecuteTS+" "+COMMAND_Pulse
     client.send_server(CommandTS)
     print("Out of ssh Hub : "+ str(client.get_OK()))
@@ -519,7 +522,7 @@ def launch_sound():
     # print("Out of kill pulseaudio VM : "+ str(client.get_OK()))
     sys.stdout.flush()
     
-    COMMAND_cookie='bash -c "scp -i .ssh/id_rsa_hub -p '+PORT_Hub+' \''+IP_Hub+':$HOME/.config/pulse/cookie\' .config/pulse/"'
+    COMMAND_cookie='bash -c "scp -i .ssh/id_rsa_hub -P '+PORT_Hub+' \''+IP_Hub+':$HOME/.config/pulse/cookie\' .config/pulse/"'
     if (args.debug):
         print("COMMAND for scp VM cookie : "+ COMMAND_cookie)
         sys.stdout.flush()
@@ -614,7 +617,6 @@ def launch_sound():
         
 # Launch OBS on the frontend
 def launch_OBS():
-
     COMMAND_DISPLAY=ExecuteHTTP+" bash -c \"' cd tmp; ./get_DISPLAY.sh; ls -la out_DISPLAY '\"" 
     client.send_server(COMMAND_DISPLAY)
     print("Out of get DISPLAY for user : "+ str(client.get_OK()))
@@ -634,9 +636,10 @@ def launch_OBS():
 # force only one ffmpeg by node (cf mageiawebrtc/command_ffmpeg)
 list_hosts_ffmpeg=[]
 def launch_ffmpeg():
-    COMMAND_ffmpeg=" /opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" "+IP_Hub+" &"
+    global IP_Hub
+    COMMAND_ffmpeg=" /opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" "+IP_Hub+":56000 &"
     with open(FILEPATH) as csv_file :
-        with open("list_hostgpu","r") as hostgpu :
+        with open("list_hostsgpu","r") as hostgpu :
             csv_reader = csv.reader(csv_file, delimiter=';')
             count_lines=0
             for row in csv_reader:
