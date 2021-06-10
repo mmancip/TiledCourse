@@ -603,18 +603,23 @@ def launch_OBS():
     time.sleep(3)
     launch_ffmpeg()
     
+# force only one ffmpeg by node (cf mageiawebrtc/command_ffmpeg)
+list_hosts_ffmpeg=[]
 def launch_ffmpeg():
-    #TODO : how to force only one ffmpeg by node (cf mageiawebrtc/command_ffmpeg)
     COMMAND_ffmpeg=" /opt/command_ffmpeg "+IdClassroom+" "+VideoDeviceNumber+" "+IP_Hub+" &"
     with open(FILEPATH) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=';')
-        count_lines=0
-        for row in csv_reader:
-            count_lines=count_lines+1
-            TilesStr=' Tiles=('+containerId(count_lines)+') '
-            client.send_server(ExecuteTS+TilesStr+COMMAND_ffmpeg)
-            print("Out of ffmpeg : "+ str(client.get_OK()))
-            time.sleep(2)
+        with open("list_hostsgpu","r") as hostgpu :
+            csv_reader = csv.reader(csv_file, delimiter=';')
+            count_lines=0
+            for row in csv_reader:
+                count_lines=count_lines+1
+                HubHost=hostgpu.readline().replace('\n','')
+                if (not HubHost in list_hosts_ffmpeg):
+                    TilesStr=' Tiles=('+containerId(count_lines)+') '
+                    client.send_server(ExecuteTS+TilesStr+COMMAND_ffmpeg)
+                    print("Out of ffmpeg on %s : %s "% (HubHost, str(client.get_OK())))
+                    list_hosts_ffmpeg.append(HubHost)
+                    #time.sleep(2)
     sys.stdout.flush()
 
 
