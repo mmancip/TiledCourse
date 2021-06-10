@@ -14,6 +14,9 @@ import inspect
 import json
 import csv
 
+if (os.path.exists("config.tar")):
+    os.system("tar xf config.tar")
+
 SITE_config='site_config.ini'
 CASE_config="case_config.ini"
 
@@ -243,7 +246,6 @@ def Run_Hub():
     # global HUB_Host
     # with open("list_hostsgpu","r") as hostfile :
     #     HUB_Host=hostfile.readline().split(" ")[0]
-    #     hostfile.close()
         
     # global DOCKER_HUB
     # DOCKER_HUB='ssh '+HUB_Host+' docker'
@@ -523,7 +525,6 @@ def launch_sound():
         sourceindex=re.sub('\t.*','',fsource.readline().replace('\n',''))
         print("sourceindex : "+sourceindex)
         sourceindex=int(sourceindex)
-        fsource.close()
     
     with open("index_stu_sink","r") as fsink :
         sinkmodule=fsink.readline().replace('\n','')
@@ -532,7 +533,6 @@ def launch_sound():
         sinkindex=re.sub('\t.*','',fsink.readline().replace('\n',''))
         print("sinkindex : "+sinkindex)
         sinkindex=int(sinkindex)
-        fsink.close()
 
     time.sleep(2)
     # Le son des étudiants sort sur les haut-parleurs du prof
@@ -573,13 +573,11 @@ def launch_sound():
             soindex=fsource.readline().replace('\n','')
             print("sourceindex%s : %s" % (VM,soindex))
             sourceVMindex.append(int(soindex))
-            fsource.close()
     
         with open("index_sink"+VM,"r") as fsink :
             siindex=fsink.readline().replace('\n','')
             print("sinkindex%s : %s" % (VM,siindex))
             sinkVMindex.append(int(siindex))
-            fsink.close()
 
         # Connect to global sound
         launch_Hub('pactl load-module module-loopback source=stu_sink'+VM+'.monitor sink=stu_sink')
