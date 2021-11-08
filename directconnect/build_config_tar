@@ -1,0 +1,1 @@
+tar -cf config.tar --dereference actions.json case_config.ini liste_tileset_students list_password site_config.ini 
