@@ -8,6 +8,8 @@ import argparse
 import re, datetime
 import inspect
 
+import shutil
+
 sys.path.append(os.path.realpath('/TiledViz/TVConnections/'))
 from connect import sock
 
@@ -49,6 +51,25 @@ if __name__ == '__main__':
 
     FILEPATH=config['CASE']['FILEPATH']
 
+    def dos2unix(filepath):
+        shutil.copyfile(filepath,filepath+".orig")
+        #os.system('bash -c "iconv -f ISO-8859-15 -t UTF-8 '+filepath+' > '+filepath+'"')
+        filetowrite=filepath+".o"
+        with open(filepath, "r", encoding="ISO-8859-1") as inputf:
+            with open(filetowrite, "w", encoding="UTF-8") as outputf:
+                for line in inputf:
+                    outputf.write(line)
+        shutil.copyfile(filepath+".o",filepath)
+        with open(filepath, "rb") as inputf:
+            with open(filetowrite, "wb") as outputf:
+                for line in inputf:
+                    outputf.write(line)
+                    
+        shutil.copyfile(filepath+".o",filepath)
+    
+    dos2unix(FILEPATH)
+    dos2unix("list_password")
+    
     def countlines(filename):
         f = open(filename) 
         lines = 0
